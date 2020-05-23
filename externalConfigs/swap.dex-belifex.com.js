@@ -14,6 +14,18 @@ window.widgetERC20Tokens = {
     // Background color of icon
     iconBgColor: '#ccc',
   },
+  muxe: {
+    // Address of ERC20 contract
+    address: '0x515669d308f887fd83a471c7764f5d084886d34d',
+    // Count of decimals after dot
+    decimals: 18,
+    // Display name in wallet (By default - its symbol of ERC20, but can be other userfriendy text)
+    fullName: 'Muxe',
+    // Icon of currency (image)
+    icon: 'https://belifex.com/assets/muxe.png',
+    // Background color of icon
+    iconBgColor: '#ccc',
+  },
   usdt: {
     address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     decimals: 6,

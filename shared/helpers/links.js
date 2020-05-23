@@ -20,7 +20,7 @@ const linksManager = {
   swap: '/swaps',
   feed: '/feed',
   aboutUs: '/aboutUs',
-  listing: 'https://listing.swaponline.io/',
+  listing: 'https://dex-belifex.com/',
   test: 'https://testnet.swaponline.io',
   main: 'https://swaponline.io/',
   ieo: '/IEO',
@@ -35,13 +35,13 @@ const linksManager = {
   EthWallet: '/Ethereum-wallet',
 
   // social networks
-  medium: '#',
-  twitter: 'https://twitter.com/SwapOnlineTeam',
-  facebook: '#',
-  telegram: 'https://t.me/swaponline',
-  bitcointalk: '#',
+  medium: 'https://medium.com/@belifex',
+  twitter: 'https://twitter.com/BelifexE',
+  facebook: 'https://www.facebook.com/Belifex.BEFX',
+  telegram: 'https://t.me/belifex_official',
+  bitcointalk: 'https://bitcointalk.org/index.php?topic=5168580.0',
   discord: '#',
-  reddit: '#',
+  reddit: 'https://www.reddit.com/r/Belifex/',
   youtube: '#',
 
   // footer links

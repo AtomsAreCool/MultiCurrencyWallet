@@ -1,16 +1,16 @@
 // Uncomment this for enable custom erc20 tokens
-/*
+
 window.widgetERC20Tokens = {
   // Symbol of ERC20 token in lowerCase
-  proxima: {
+  belifex: {
     // Address of ERC20 contract
-    address: '0xc060b26e60698e91a6acc84051a26b32e38dd1a4',
+    address: '0xb91c2a2b953d72f3ef890490669a0a41b0add5f7',
     // Count of decimals after dot
-    decimals: 18,
+    decimals: 8,
     // Display name in wallet (By default - its symbol of ERC20, but can be other userfriendy text)
-    fullName: 'Proxima',
+    fullName: 'Belifex',
     // Icon of currency (image)
-    icon: 'https://growup.wpmix.net/wp-content/uploads/2016/10/favicon.png',
+    icon: 'https://belifex.com/assets/befx.png',
     // Background color of icon
     iconBgColor: '#ccc',
   },
@@ -23,21 +23,20 @@ window.widgetERC20Tokens = {
 */
 
 // Uncomment this for enable comisions
-/*
 window.widgetERC20Comisions = {
   btc: {
-    fee: 5,   // percent from withdraw amount
-    address: '2MuXz9BErMbWmoTshGgkjd7aMHeaxV8Bdkk',  // wallet for fee
+    fee: 1,   // percent from withdraw amount
+    address: '3ER1nNvcqM2o5d77HvU2cx3qaiKEJqj1nG',  // wallet for fee
     min: 0.00001 // minimal fee amount
   },
   eth: {
-    fee: 7,
-    address: '0x276747801B0dbb7ba04685BA27102F1B27Ca0815',
+    fee: 1,
+    address: '0x78D2a5611a726A9FfE297174edEff9F07012EC5F',
     min: 0.01
   },
   erc20: {
-    fee: 6,
-    address: '0x276747801B0dbb7ba04685BA27102F1B27Ca0815',
+    fee: 1,
+    address: '0x78D2a5611a726A9FfE297174edEff9F07012EC5F',
     min: 1,
   }
 }

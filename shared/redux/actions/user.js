@@ -13,6 +13,22 @@ import { getActivatedCurrencies } from 'helpers/user'
 import getCurrencyKey from 'helpers/getCurrencyKey'
 
 
+/*
+  Когда добавляем reducers, для старых пользователей они не инициализированы
+  Нужно проверять значение, и если undefined - инициализировать
+*/
+const initReducerState = () => {
+  const {
+    user: {
+      activeCurrency,
+      activeFiat,
+    },
+  } = getState()
+
+  if (!activeCurrency) reducers.user.setActiveCurrency({ activeCurrency: 'BTC'})
+  if (!activeFiat) reducers.user.setActiveFiat({ activeFiat: window.DEFAULT_FIAT || 'USD' })
+}
+
 const sign_btc_multisig = async (btcPrivateKey) => {
   let btcMultisigOwnerKey = localStorage.getItem(constants.privateKeyNames.btcMultisigOtherOwnerKey)
   try { btcMultisigOwnerKey = JSON.parse(btcMultisigOwnerKey) } catch (e) { }
@@ -33,6 +49,8 @@ const sign_btc_2fa = async (btcPrivateKey) => {
 }
 
 const sign = async () => {
+  initReducerState()
+
   let mnemonic = localStorage.getItem(constants.privateKeyNames.twentywords)
 
   if (!mnemonic) {
@@ -268,7 +286,14 @@ const getInfoAboutCurrency = (currencyNames) =>
                 reducers.user.setInfoAboutCurrency({ name: 'ethMnemonicData', infoAboutCurrency: currencyInfo }) // Sweep (for future)
                 break
               }
-              default: reducers.user.setInfoAboutCurrency({ name: `${currencyInfoItem.symbol.toLowerCase()}Data`, infoAboutCurrency: currencyInfo })
+              default: {
+                if (ethToken.isEthToken( { name: currencyInfoItem.symbol } )) {
+                  reducers.user.setInfoAboutToken({ name: currencyInfoItem.symbol.toLowerCase(), infoAboutCurrency: currencyInfo })
+                } else {
+                  reducers.user.setInfoAboutCurrency({ name: `${currencyInfoItem.symbol.toLowerCase()}Data`, infoAboutCurrency: currencyInfo })
+                }
+                break
+              }
             }
           }
         }
@@ -285,7 +310,30 @@ const pullTransactions = transactions => {
   reducers.history.setTransactions(data)
 }
 
+const pullActiveCurrency = (currency) => {
+  reducers.user.setActiveCurrency({ activeCurrency: currency })
+}
+
 const delay = (ms) => new Promise(resolve => setTimeout(() => resolve(true), ms))
+
+const fetchMultisigStatus = async () => {
+  const {
+    user: {
+      btcMultisigUserData: {
+        address: mainAddress,
+        wallets,
+      },
+    },
+  } = getState()
+
+  actions.multisigTx.fetch(mainAddress)
+  if (wallets && wallets.length) {
+    wallets.map(({ address }, index) => new Promise(async (resolve) => {
+      actions.multisigTx.fetch(address)
+      resolve(true)
+    }))
+  }
+}
 
 const setTransactions = async () => {
   const isBtcSweeped = actions.btc.isSweeped()
@@ -295,6 +343,10 @@ const setTransactions = async () => {
     core: { hiddenCoinsList },
   } = getState()
   const enabledCurrencies = getActivatedCurrencies()
+
+  /*
+    fetching penging btc-ms txs
+  */
 
   try {
     // @ToDo - make in like query
@@ -463,4 +515,6 @@ export default {
   getAuthData,
   getWithdrawWallet,
   getFiats,
+  fetchMultisigStatus,
+  pullActiveCurrency,
 }

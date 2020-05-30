@@ -45,11 +45,13 @@ class Row extends React.PureComponent {
   getFiatBalance = async (type) => {
     const { activeFiat } = this.props
 
-    actions.user.getExchangeRate(type, activeFiat.toLowerCase()).then((exCurrencyRate) => {
-      this.setState(() => ({
-        exCurrencyRate,
-      }))
-    })
+    if (activeFiat) {
+      actions.user.getExchangeRate(type, activeFiat.toLowerCase()).then((exCurrencyRate) => {
+        this.setState(() => ({
+          exCurrencyRate,
+        }))
+      })
+    }
   }
 
   handlePayInvoice = async () => {
@@ -83,6 +85,7 @@ class Row extends React.PureComponent {
         toAddress: (invoiceData.destAddress) ? invoiceData.destAddress : invoiceData.fromAddress,
         amount: invoiceData.amount,
         invoice: invoiceData,
+        hiddenCoinsList: [],
         onReady: () => {
           this.setState({
             payed: true,
@@ -393,7 +396,7 @@ class Row extends React.PureComponent {
             )}
             <div styleName={statusStyleAmount}>
               {invoiceData ? this.parseFloat(direction, value, 'out', type) : this.parseFloat(direction, value, 'in', type)}
-              <span styleName='amountUsd'>{`~${getFiat.toFixed(2)}`}{activeFiat}</span>
+              <span styleName='amountUsd'>{`~${getFiat.toFixed(2)}`}{` `}{activeFiat}</span>
 
             </div>
             {/* <LinkTransaction type={type} styleName='address' hash={hash} >{hash}</LinkTransaction> */}

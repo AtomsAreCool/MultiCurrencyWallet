@@ -3,10 +3,9 @@ import React, { PureComponent, Fragment } from 'react'
 import { connect } from 'redaction'
 import actions from 'redux/actions'
 import Slider from 'pages/Wallet/components/WallerSlider';
-import { Link, withRouter } from 'react-router-dom'
+import { withRouter } from 'react-router-dom'
 
-import { links, constants, ethToken } from 'helpers'
-import { getTokenWallet, getBitcoinWallet, getEtherWallet } from 'helpers/links'
+import { links } from 'helpers'
 
 
 import CSSModules from 'react-css-modules'
@@ -15,19 +14,12 @@ import styles from 'pages/CurrencyWallet/CurrencyWallet.scss'
 import Row from 'pages/History/Row/Row'
 
 import Table from 'components/tables/Table/Table'
-import NotifyBlock from 'pages/Wallet/components/NotityBlock/NotifyBock'
 import PageSeo from 'components/Seo/PageSeo'
 import { getSeoPage } from 'helpers/seo'
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
-import ReactTooltip from 'react-tooltip'
-import CurrencyButton from 'components/controls/CurrencyButton/CurrencyButton'
 import { localisedUrl } from 'helpers/locale'
 import config from 'helpers/externalConfig'
-import BalanceForm from 'components/BalanceForm/BalanceForm'
-import { BigNumber } from 'bignumber.js'
 import ContentLoader from 'components/loaders/ContentLoader/ContentLoader'
-import getCurrencyKey from 'helpers/getCurrencyKey'
-
 
 const isWidgetBuild = config && config.isWidget
 
@@ -63,13 +55,17 @@ const langLabels = defineMessages({
   user: {
     btcData,
     ethData,
+    multisigStatus,
+    activeFiat,
   },
 }) => {
   return {
     data: {
       btc: btcData,
       eth: ethData,
-    }
+    },
+    multisigStatus,
+    activeFiat,
   }
 })
 @injectIntl
@@ -185,9 +181,16 @@ export default class InvoicesList extends PureComponent {
 
   async componentWillUnmount() { }
 
-  rowRender = (row, rowIndex) => (
-    <Row key={rowIndex} {...row} viewType="invoice" />
-  )
+  rowRender = (row, rowIndex) => {
+    const {
+      history,
+      activeFiat,
+    } = this.props
+
+    return (
+      <Row key={rowIndex} {...row} viewType="invoice" activeFiat={activeFiat} history={history} />
+    )
+  }
 
   render() {
     let {
@@ -197,6 +200,7 @@ export default class InvoicesList extends PureComponent {
       intl,
       isSigned,
       onlyTable,
+      multisigStatus,
     } = this.props
 
     const {
@@ -237,7 +241,7 @@ export default class InvoicesList extends PureComponent {
             )}
         </h3>
         {(items && items.length > 0) ? (
-          <Table rows={items} styleName="currencyWalletSwapHistory" rowRender={this.rowRender} />
+          <Table rows={items} styleName="currencyHistory" rowRender={this.rowRender} />
         ) : (
             <ContentLoader rideSideContent empty inner />
           )}
@@ -256,6 +260,7 @@ export default class InvoicesList extends PureComponent {
           defaultDescription={intl.formatMessage(langLabels.metaDescription)} />
         <Slider
           settings={settings}
+          multisigStatus={multisigStatus}
           isSigned={isSigned}
           {...this.state}
         />

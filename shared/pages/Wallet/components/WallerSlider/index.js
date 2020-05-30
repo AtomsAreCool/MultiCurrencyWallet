@@ -1,6 +1,8 @@
 import React, { Component, Fragment } from 'react'
 
-import { constants } from 'helpers'
+import { connect } from 'redaction'
+
+import { constants, getItezUrl } from 'helpers'
 import actions from 'redux/actions'
 import axios from 'axios'
 import security from '../NotityBlock/images/security.svg'
@@ -8,10 +10,12 @@ import styles from '../NotityBlock/NotifyBlock.scss'
 import NotifyBlock from '../NotityBlock/NotifyBock'
 import ContentLoader from '../../../../components/loaders/ContentLoader/ContentLoader'
 
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, injectIntl } from 'react-intl'
 import linksManager from '../../../../helpers/links'
 
 
+@injectIntl
+@connect(({ user }) => ({ user }))
 export default class WallerSlider extends Component {
   constructor(props) {
     super(props)
@@ -50,6 +54,8 @@ export default class WallerSlider extends Component {
   }
 
   getBanners = () => {
+    const { user, intl: { locale } } = this.props
+
     if (window
       && window.bannersOnMainPage
       && window.bannersOnMainPage.length
@@ -63,7 +69,16 @@ export default class WallerSlider extends Component {
       try {
         return axios
           .get('https://noxon.wpmix.net/swapBanners/banners.php')
-          .then(({ data: banners }) => {
+          .then(({ data }) => {
+            const banners = data.map(el => {
+              if (el[4].includes('https://itez.swaponline.io/')) {
+                const bannerArr = [...el]
+                bannerArr.splice(4, 1, getItezUrl({ user, locale, url: el[4] }));
+
+                return bannerArr
+              }
+              return el
+            })
             this.setState(() => ({
               banners,
               isFetching: true,
@@ -99,6 +114,10 @@ export default class WallerSlider extends Component {
     })
   }
 
+  handleGoToMultisigRequest = () => {
+    actions.multisigTx.goToLastWallet()
+  }
+
   handleSignUp = () => {
     actions.modals.open(constants.modals.SignUp)
   }
@@ -106,10 +125,22 @@ export default class WallerSlider extends Component {
   render() {
     const { mnemonicDeleted, banners } = this.state
 
+    const { multisigPendingCount } = this.props
+
     const isPrivateKeysSaved = localStorage.getItem(constants.localStorage.privateKeysSaved)
 
     let firstBtnTitle = <FormattedMessage id="descr282" defaultMessage="Show my keys" />
     if (!mnemonicDeleted) firstBtnTitle = <FormattedMessage id="ShowMyMnemonic" defaultMessage="Показать 12 слов" />
+
+    const needSignMultisig = (
+      <FormattedMessage
+        id="Banner_YouAreHaveNotSignegTx"
+        defaultMessage="{count} multisig transaction is waiting for your confirmation"
+        values={{
+          count: multisigPendingCount,
+        }}
+      />
+    )
 
     return (window.location.hash !== linksManager.hashHome) ? null : (
       <Fragment>
@@ -120,6 +151,19 @@ export default class WallerSlider extends Component {
           <ContentLoader banners /> :
           <div id="swiper_banners" className="swiper-container" style={{ marginTop: '20px', marginBottom: '30px' }}>
             <div className="swiper-wrapper">
+              {(multisigPendingCount > 0) && (
+                <div className="swiper-slide">
+                  <NotifyBlock
+                    className="notifyIncomeRequest"
+                    firstBtn={needSignMultisig}
+                    widthIcon="80"
+                    background="129218"
+                    descr={needSignMultisig}
+                    logDescr={`Click on btc ms notify block (banner)`}
+                    firstFunc={this.handleGoToMultisigRequest}
+                  />
+                </div>
+              )}
               {(!isPrivateKeysSaved && !mnemonicDeleted) && (
                 <div className="swiper-slide">
                   <NotifyBlock
@@ -129,6 +173,7 @@ export default class WallerSlider extends Component {
                     widthIcon="80"
                     background="6144e5"
                     descr={<FormattedMessage id="ShowMyMnemonic" defaultMessage="Please backup your wallet" />}
+                    logDescr={`Click on save mnemonic notify block (banner)`}
                     firstFunc={mnemonicDeleted ? this.handleShowKeys : this.handleShowMnemonic}
                   />
                 </div>

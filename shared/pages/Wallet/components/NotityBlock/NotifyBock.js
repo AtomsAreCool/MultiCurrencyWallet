@@ -9,31 +9,27 @@ import Button from 'components/controls/Button/Button'
 import styles from './NotifyBlock.scss'
 
 const NotifyBlock = ({
-  className,
   icon,
   descr,
   tooltip,
-  firstBtn,
-  secondBtn,
   firstFunc,
-  secondFunc,
-  widthIcon,
   background,
   link,
-  history
+  history,
+  logDescr,
 }) => {
   const handleGoto = () => {
     console.log('descr', descr)
     console.log('hostname', window.location.hostname)
     firstFunc && firstFunc()
-    if(link && link.includes('http')) {
+    if (link && link.includes('http')) {
       window.location = link;
     } else {
-      history.push(link)
+      if (link) history.push(link)
     }
     try {
       axios({
-        url: `https://noxon.wpmix.net/counter.php?msg=${descr}host=${window.location.hostname}`,
+        url: `https://noxon.wpmix.net/counter.php?msg=${(logDescr) ? logDescr : descr}host=${window.location.hostname}`,
         method: 'post',
       }).catch(e => console.error(e))
     } catch (error) {

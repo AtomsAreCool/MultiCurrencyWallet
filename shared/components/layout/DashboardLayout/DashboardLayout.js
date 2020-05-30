@@ -68,14 +68,6 @@ const NewDesignLayout = (props) => {
   })
 
   useEffect(() => {
-    if (isMobile) {
-      balanceRef.current.scrollIntoView({
-        block: 'start',
-      })
-    }
-  }, [])
-
-  useEffect(() => {
     const getFiats = async () => {
       const { fiatsRates } = await actions.user.getFiats()
 
@@ -172,9 +164,12 @@ const NewDesignLayout = (props) => {
       actions.core.getSwapHistory()
     }
 
+    // @ToDo Удалить
+    /*
     this.setState({
       activeView: index,
     })
+    */
   }
 
   return (

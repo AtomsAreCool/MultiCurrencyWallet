@@ -5,7 +5,7 @@ export const initialState = {
     currency: 'ETH',
     fullName: 'Ethereum',
     balanceError: null,
-    infoAboutCurrency: null
+    infoAboutCurrency: null,
   },
   btcData: {
     balance: 0,
@@ -13,7 +13,7 @@ export const initialState = {
     currency: 'BTC',
     fullName: 'Bitcoin',
     balanceError: null,
-    infoAboutCurrency: null
+    infoAboutCurrency: null,
   },
   btcMultisigSMSData: {
     balance: 0,
@@ -21,7 +21,7 @@ export const initialState = {
     currency: 'BTC (SMS-Protected)',
     fullName: 'Bitcoin (SMS-Protected)',
     balanceError: null,
-    infoAboutCurrency: null
+    infoAboutCurrency: null,
   },
   btcMultisigG2FAData: {
     balance: 0,
@@ -29,7 +29,7 @@ export const initialState = {
     currency: 'BTC (Google 2FA)',
     fullName: 'Bitcoin (Google 2FA)',
     balanceError: null,
-    infoAboutCurrency: null
+    infoAboutCurrency: null,
   },
   btcMultisigUserData: {
     balance: 0,
@@ -37,7 +37,7 @@ export const initialState = {
     currency: 'BTC (Multisig)',
     fullName: 'Bitcoin (Multisig)',
     balanceError: null,
-    infoAboutCurrency: null
+    infoAboutCurrency: null,
   },
   usdtData: {
     address: '0x0',
@@ -53,7 +53,34 @@ export const initialState = {
   isFetching: false,
   isBalanceFetching: false,
   isTokenSigned: false,
-  activeFiat: window.DEFAULT_FIAT || 'USD'
+  activeFiat: window.DEFAULT_FIAT || 'USD',
+  activeCurrency: 'BTC',
+  multisigStatus: {},
+  multisigPendingCount: 0,
+}
+
+export const updateMultisigStatus = (state, { address, last, total }) => {
+  let totalPending = 0
+  if (state.multisigStatus) {
+    Object.keys(state.multisigStatus).map((savedAddress) => {
+      if (address !== savedAddress) totalPending += state.multisigStatus[savedAddress].count
+    })
+  }
+
+  totalPending += total
+
+  return {
+    ...state,
+    multisigPendingCount: totalPending,
+    multisigStatus: {
+      ...(state.multisigStatus ? state.multisigStatus : {}),
+      [address] : {
+        address,
+        pending: last,
+        count: total,
+      },
+    },
+  }
 }
 
 export const addWallet = (state, { name, data }) => ({
@@ -97,7 +124,7 @@ export const setBtcMultisigBalance = (state, { address, amount, unconfirmedBalan
     }
   })
   return {
-    ...state
+    ...state,
   }
 }
 
@@ -115,15 +142,29 @@ export const setBalance = (state, { name, amount, unconfirmedBalance }) => ({
   },
 })
 
+export const setInfoAboutToken = (state, { name, infoAboutCurrency }) => ({
+  ...state,
+  tokensData: {
+    ...state.tokensData,
+    [name]: {
+      ...state.tokensData[name],
+      infoAboutCurrency,
+    },
+  },
+})
 
 export const setInfoAboutCurrency = (state, { name, infoAboutCurrency }) => ({
   ...state,
   tokensData: {
     ...state.tokensData,
+    [name]: {
+      ...state.tokensData[name],
+      infoAboutCurrency,
+    },
   },
   [name]: {
     ...state[name],
-    infoAboutCurrency
+    infoAboutCurrency,
   },
 })
 
@@ -177,14 +218,14 @@ export const setIsBalanceFetching = (state, { isBalanceFetching }) => ({
 
 export const setIsFetching = (state, { isFetching }) => ({
   ...state,
-  isFetching
+  isFetching,
 })
 
 export const setFiats = (state, { fiats }) => ({ ...state, fiats })
 
-export const setActiveFiat = (state, { activeFiat }) => {
-  return ({ ...state, activeFiat })
-}
+export const setActiveCurrency = (state, { activeCurrency }) => ({ ...state, activeCurrency })
+
+export const setActiveFiat = (state, { activeFiat }) => ({ ...state, activeFiat })
 
 export const setReputation = (state, { name, reputation, reputationOracleSignature }) => ({
   ...state,

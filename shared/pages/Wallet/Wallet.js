@@ -25,6 +25,7 @@ import InvoicesList from 'pages/Invoices/InvoicesList'
 import DashboardLayout from 'components/layout/DashboardLayout/DashboardLayout'
 import BalanceForm from 'components/BalanceForm/BalanceForm'
 
+import { BigNumber } from 'bignumber.js'
 
 const isWidgetBuild = config && config.isWidget
 
@@ -42,6 +43,8 @@ const isWidgetBuild = config && config.isWidget
       tokensData,
       isFetching,
       isBalanceFetching,
+      multisigPendingCount,
+      activeCurrency
     },
     currencies: { items: currencies },
     createWallet: { currencies: assets },
@@ -87,9 +90,11 @@ const isWidgetBuild = config && config.isWidget
       assets,
       isFetching,
       isBalanceFetching,
+      multisigPendingCount,
       hiddenCoinsList: hiddenCoinsList,
       userEthAddress: ethData.address,
       user,
+      activeCurrency,
       activeFiat,
       tokensData: {
         ethData,
@@ -117,6 +122,7 @@ export default class Wallet extends Component {
       match: {
         params: { page = null },
       },
+      multisigPendingCount,
     } = props
 
     let activeView = 0
@@ -130,6 +136,7 @@ export default class Wallet extends Component {
       activeView,
       btcBalance: 0,
       enabledCurrencies: getActivatedCurrencies(),
+      multisigPendingCount,
     }
   }
 
@@ -139,41 +146,54 @@ export default class Wallet extends Component {
       match: {
         params: { page = null },
       },
+      multisigPendingCount,
     } = this.props
+
+
     const {
       activeFiat: prevFiat,
       match: {
         params: { page: prevPage = null },
       },
+      multisigPendingCount: prevMultisigPendingCount,
     } = prevProps
 
     if (activeFiat !== prevFiat) {
       this.getFiats()
     }
 
-    if (page !== prevPage) {
+    if (page !== prevPage || multisigPendingCount !== prevMultisigPendingCount) {
       let activeView = 0
 
-      if (page === 'history' && !isMobile) {
-        activeView = 1
-      }
+      if (page === 'history' && !isMobile) activeView = 1
       if (page === 'invoices') activeView = 2
+
       this.setState({
         activeView,
+        multisigPendingCount,
       })
     }
   }
 
   componentDidMount() {
     const { params, url } = this.props.match
+    const {
+      multisigPendingCount,
+    } = this.props
 
     actions.user.getBalances()
+
+    actions.user.fetchMultisigStatus()
+
     this.getFiats()
 
-    if (url.includes('withdraw')) {
+    if (url.includes('send')) {
       this.handleWithdraw(params)
     }
     this.getInfoAboutCurrency()
+    this.setState({
+      multisigPendingCount,
+    })
   }
 
   getInfoAboutCurrency = async () => {
@@ -298,7 +318,7 @@ export default class Wallet extends Component {
     history.push(
       localisedUrl(
         locale,
-        (isToken ? '/token' : '') + `/${targetCurrency}/${address}/withdraw`
+        (isToken ? '/token' : '') + `/${targetCurrency}/${address}/send`
       )
     )
   }
@@ -384,23 +404,26 @@ export default class Wallet extends Component {
       activeView,
       infoAboutCurrency,
       enabledCurrencies,
+      multisigPendingCount,
     } = this.state
+
     const {
       hiddenCoinsList,
       isBalanceFetching,
       activeFiat,
+      activeCurrency,
       match: {
         params: {
           page = null,
         },
-      }, } = this.props
+      },
+    } = this.props
 
     const allData = actions.core.getWallets()
 
     this.checkBalance()
 
     let btcBalance = 0
-    let fiatBalance = 0
     let changePercent = 0
 
     // Набор валют для виджета
@@ -439,6 +462,17 @@ export default class Wallet extends Component {
 
     tableRows = tableRows.filter(({ currency }) => enabledCurrencies.includes(currency))
 
+    tableRows = tableRows.map(el => {
+      return ({
+        ...el,
+        balance: el.balance,
+        fiatBalance: (el.balance > 0 && el.infoAboutCurrency) ? BigNumber(el.balance)
+          .multipliedBy(el.infoAboutCurrency.price_usd)
+          .multipliedBy(multiplier || 1)
+          .dp(2, BigNumber.ROUND_FLOOR) : 0
+      })
+    })
+
     tableRows.forEach(({ name, infoAboutCurrency, balance, currency }) => {
       const currName = currency || name
 
@@ -447,9 +481,10 @@ export default class Wallet extends Component {
           changePercent = infoAboutCurrency.percent_change_1h
         }
         btcBalance += balance * infoAboutCurrency.price_btc
-        fiatBalance += balance * infoAboutCurrency.price_usd * (multiplier || 1)
       }
     })
+
+    const allFiatBalance = tableRows.reduce((acc, cur) => BigNumber(cur.fiatBalance).plus(acc), 0)
 
     return (
       <DashboardLayout
@@ -457,13 +492,15 @@ export default class Wallet extends Component {
         BalanceForm={(
           <BalanceForm
             activeFiat={activeFiat}
-            fiatBalance={fiatBalance}
+            fiatBalance={allFiatBalance}
             currencyBalance={btcBalance}
             changePercent={changePercent}
+            activeCurrency={activeCurrency}
             handleReceive={this.handleModalOpen}
             handleWithdraw={this.handleWithdrawFirstAsset}
             handleExchange={this.handleGoExchange}
             isFetching={isBalanceFetching}
+            type="wallet"
             currency="btc"
             infoAboutCurrency={infoAboutCurrency}
           />
@@ -476,6 +513,7 @@ export default class Wallet extends Component {
             {...this.state}
             {...this.props}
             goToСreateWallet={this.goToСreateWallet}
+            multisigPendingCount={multisigPendingCount}
             getExCurrencyRate={(currencySymbol, rate) => this.getExCurrencyRate(currencySymbol, rate)}
           />
         }

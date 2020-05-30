@@ -80,7 +80,6 @@ const signToUserMultisig = async () => {
   })
 
   const wallets = walletsData.map((data) => {
-    walletAddreses.push(data.address)
 
     return {
       address: data.address,
@@ -93,6 +92,8 @@ const signToUserMultisig = async () => {
       unconfirmedBalance: 0,
       isBalanceFetched: false,
       balanceError: false,
+      publicKeys: data.publicKeys,
+      publicKey: data.publicKey,
     }
   }).filter((wallet) => wallet.address !== btcMultisigUserData.address)
 
@@ -1084,7 +1085,18 @@ const confirmSMSProtected = async (smsCode) => {
 
 const send = async ({ from, to, amount, feeValue, speed } = {}) => {
   feeValue = feeValue || await btc.estimateFeeValue({ inSatoshis: true, speed, method: 'send_multisig' })
-  const { user: { btcMultisigUserData: { address, privateKey, publicKeys, publicKey } } } = getState()
+  const {
+    user: {
+      btcMultisigUserData: {
+        privateKey,
+      },
+    }
+  } = getState()
+
+  const senderWallet = addressToWallet( from )
+  console.log('senderWallet', from)
+
+  const { address, publicKeys } = senderWallet
 
   let feeFromAmount = BigNumber(0)
 

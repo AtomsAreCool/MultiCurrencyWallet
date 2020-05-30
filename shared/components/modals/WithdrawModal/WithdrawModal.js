@@ -33,14 +33,21 @@ import { inputReplaceCommaWithDot } from 'helpers/domUtils'
 import redirectTo from 'helpers/redirectTo'
 import AdminFeeInfoBlock from 'components/AdminFeeInfoBlock/AdminFeeInfoBlock'
 
+import { getActivatedCurrencies } from 'helpers/user'
+
+import CurrencyList from './components/CurrencyList'
+
+
+
 @injectIntl
 @connect(
   ({
     currencies,
-    user: { ethData, btcData, tokensData, activeFiat, isBalanceFetching },
+    user: { ethData, btcData, tokensData, activeFiat, isBalanceFetching, activeCurrency },
     ui: { dashboardModalsAllowed },
   }) => ({
     activeFiat,
+    activeCurrency,
     currencies: currencies.items,
     items: [ethData, btcData],
     tokenItems: [...Object.keys(tokensData).map((k) => tokensData[k])],
@@ -66,7 +73,7 @@ export default class WithdrawModal extends React.Component {
 
     const currentActiveAsset = data.data
     const currentDecimals = constants.tokenDecimals[currency.toLowerCase()]
-    const allCurrencyies = items.concat(tokenItems)
+    const allCurrencyies = actions.core.getWallets() //items.concat(tokenItems)
     const selectedItem = allCurrencyies.filter((item) => item.currency === currency)[0]
 
     let usedAdminFee = false
@@ -92,14 +99,22 @@ export default class WithdrawModal extends React.Component {
       ethBalance: null,
       isEthToken: helpers.ethToken.isEthToken({ name: currency.toLowerCase() }),
       currentDecimals,
-      selectedValue: localStorage.getItem(constants.localStorage.balanceActiveCurrency).toUpperCase() || currency,
+      /*
+      @ToDo, по коду нет установки ls balanceActiveCurrency
+        В сторейдж лежит почему ETH
+        Биток вообще не понятно что и как оно тут считает фиат
+        Вводишь отправить 0.1 битка - по факту отправляет 0.0000123 чего-то там
+        Хорошо хоть не больше...
+      */
+      selectedValue: currency, //localStorage.getItem(constants.localStorage.balanceActiveCurrency).toUpperCase() || currency,
       getFiat: 0,
       error: false,
       ownTx: '',
       isAssetsOpen: false,
-      hiddenCoinsList,
+      hiddenCoinsList: actions.core.getHiddenCoins(),
       currentActiveAsset,
       allCurrencyies,
+      enabledCurrencies: getActivatedCurrencies(),
     }
   }
 
@@ -229,7 +244,13 @@ export default class WithdrawModal extends React.Component {
   }
 
   handleSubmit = async () => {
-    const { address: to, amount, ownTx } = this.state
+    const {
+      address: to,
+      amount,
+      ownTx,
+      usedAdminFee,
+    } = this.state
+
     const {
       data: { currency, address, invoice, onReady },
       name,
@@ -240,6 +261,14 @@ export default class WithdrawModal extends React.Component {
     this.setBalanceOnState(currency)
 
     let sendOptions = { to, amount, speed: 'fast' }
+
+    let adminFee = 0
+    if (usedAdminFee) {
+      adminFee = BigNumber(usedAdminFee.fee).dividedBy(100).multipliedBy(amount)
+
+      if (BigNumber(usedAdminFee.min).isGreaterThan(adminFee)) adminFee = BigNumber(usedAdminFee.min)
+      adminFee = adminFee.toNumber()
+    }
 
     if (helpers.ethToken.isEthToken({ name: currency.toLowerCase() })) {
       sendOptions = {
@@ -253,6 +282,10 @@ export default class WithdrawModal extends React.Component {
         from: address,
       }
     }
+
+    // Опрашиваем балансы отправителя и получателя на момент выполнения транзакции
+    // Нужно для расчета final balance получателя и отправителя
+    const beforeBalances = await helpers.transactions.getTxBalances( currency, address, to)
 
     if (invoice && ownTx) {
       await actions.invoices.markInvoice(invoice.id, 'ready', ownTx, address)
@@ -272,6 +305,7 @@ export default class WithdrawModal extends React.Component {
     await actions[currency.toLowerCase()]
       .send(sendOptions)
       .then(async (txRaw) => {
+
         actions.loader.hide()
         actions[currency.toLowerCase()].getBalance(currency)
         if (invoice) {
@@ -287,6 +321,11 @@ export default class WithdrawModal extends React.Component {
         // Redirect to tx
         const txInfo = helpers.transactions.getInfo(currency.toLowerCase(), txRaw)
         const { tx: txId } = txInfo
+
+        // Не используем await. Сбрасываем статистику по транзакции (final balance)
+        // Без блокировки клиента
+        // Результат и успешность запроса критического значения не имеют
+        helpers.transactions.pullTxBalances(txId, amount, beforeBalances, adminFee)
 
         const txInfoUrl = helpers.transactions.getTxRouter(currency.toLowerCase(), txId)
         redirectTo(txInfoUrl)
@@ -424,32 +463,8 @@ export default class WithdrawModal extends React.Component {
     })
   }
 
-  openModal = (currency) => {
-    const {
-      history,
-      intl: { locale },
-    } = this.props
-
-    const currentAsset = this.state.allCurrencyies.filter((item) => currency === item.currency)
-
-    let targetCurrency = currentAsset[0].currency
-    switch (currency.toLowerCase()) {
-      case 'btc (multisig)':
-      case 'btc (sms-protected)':
-        targetCurrency = 'btc'
-        break
-    }
-
-    const isToken = helpers.ethToken.isEthToken({ name: currency })
-
-    history.push(
-      localisedUrl(locale, (isToken ? '/token' : '') + `/${targetCurrency}/${currentAsset[0].address}/withdraw`)
-    )
-  }
-
   setAdditionCurrency = (currency) => {
-    this.setState({ selectedValue: currency })
-    localStorage.setItem(constants.localStorage.balanceActiveCurrency, currency.toLowerCase())
+    actions.user.pullActiveCurrency(currency.toLowerCase())
   }
 
   render() {
@@ -463,14 +478,16 @@ export default class WithdrawModal extends React.Component {
       fiatAmount,
       isEthToken,
       openScanCam,
-      usedAdminFee,
       isAssetsOpen,
-      selectedValue,
       exCurrencyRate,
-      allCurrencyies,
       currentDecimals,
       hiddenCoinsList,
       currentActiveAsset,
+      selectedValue,
+      allCurrencyies,
+      allCurrencyies: allData,
+      usedAdminFee,
+      enabledCurrencies,
     } = this.state
 
     const {
@@ -478,6 +495,7 @@ export default class WithdrawModal extends React.Component {
       intl,
       portalUI,
       activeFiat,
+      activeCurrency,
       dashboardView,
     } = this.props
 
@@ -488,9 +506,29 @@ export default class WithdrawModal extends React.Component {
     let min = isEthToken ? 0 : minAmount[currency.toLowerCase()]
     let defaultMin = min
 
+    /*
     let enabledCurrencies = allCurrencyies.filter(
       (x) => !hiddenCoinsList.map((item) => item.split(':')[0]).includes(x.currency)
     )
+    */
+
+    /*
+    let enabledCurrencies = allCurrencyies.filter(({ currency, address, balance }) => {
+      // @ToDo - В будущем нужно убрать проверку только по типу монеты.
+      // Старую проверку оставил, чтобы у старых пользователей не вывалились скрытые кошельки
+
+      return (!hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`)) || balance > 0
+    })
+    */
+
+    let tableRows = actions.core.getWallets().filter(({ currency, address, balance }) => {
+      // @ToDo - В будущем нужно убрать проверку только по типу монеты.
+      // Старую проверку оставил, чтобы у старых пользователей не вывалились скрытые кошельки
+
+      return (!hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`)) || balance > 0
+    })
+
+    tableRows = tableRows.filter(({ currency }) => enabledCurrencies.includes(currency))
 
     if (usedAdminFee) {
       defaultMin = BigNumber(min).plus(usedAdminFee.min).toNumber()
@@ -587,71 +625,16 @@ export default class WithdrawModal extends React.Component {
             <FieldLabel>
               <FormattedMessage id="Withdrow559" defaultMessage="Отправить с кошелька " />
             </FieldLabel>
-            <div
-              styleName="customSelectValue"
-              onClick={() => this.setState(({ isAssetsOpen }) => ({ isAssetsOpen: !isAssetsOpen }))}
-            >
-              <div styleName="coin">
-                <Coin name={currentActiveAsset.currency} />
-              </div>
-              <div>
-                <a>{currentActiveAsset.currency}</a>
-                <span styleName="address">{currentAddress}</span>
-                <span styleName="mobileAddress">
-                  {isMobile ? <PartOfAddress address={currentAddress} withoutLink /> : ''}
-                </span>
-              </div>
-              <div styleName="amount">
-                <span styleName="currency">
-                  {currentBalance} {currency}
-                </span>
-                <span styleName="usd">
-                  {currentActiveAsset.infoAboutCurrency
-                    ? (currentBalance * exCurrencyRate).toFixed(2)
-                    : (currentBalance * currencyRate).toFixed(2)}{' '}
-                  {activeFiat}
-                </span>
-              </div>
-              <div styleName={cx('customSelectArrow', { active: isAssetsOpen })}></div>
-            </div>
-            {isAssetsOpen && (
-              <div styleName="customSelectList">
-                {enabledCurrencies.map((item) => (
-                  <div
-                    styleName={cx('customSelectListItem customSelectValue', {
-                      disabled: item.balance === 0,
-                    })}
-                    onClick={() => {
-                      this.openModal(item.currency),
-                        this.setState({
-                          currentActiveAsset: item,
-                          isAssetsOpen: false,
-                        })
-                    }}
-                  >
-                    <Coin name={item.currency} />
-                    <div>
-                      <a>{item.fullName}</a>
-                      <span styleName="address">{item.address}</span>
-                      <span styleName="mobileAddress">
-                        {isMobile ? <PartOfAddress address={item.address} withoutLink /> : ''}
-                      </span>
-                    </div>
-                    <div styleName="amount">
-                      <span styleName="currency">
-                        {item.balance} {item.currency}
-                      </span>
-                      <span styleName="usd">
-                        {item.infoAboutCurrency
-                          ? (item.balance * exCurrencyRate).toFixed(2)
-                          : (item.balance * item.currencyRate).toFixed(2)}{' '}
-                        {activeFiat}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <CurrencyList
+              {...this.props}
+              currentActiveAsset={currentActiveAsset}
+              currentBalance={currentBalance}
+              currency={currency}
+              exCurrencyRate={exCurrencyRate}
+              activeFiat={activeFiat}
+              tableRows={tableRows}
+              currentAddress={currentAddress}
+            />
           </div>
         </div>
         <div styleName="highLevel">
@@ -688,17 +671,17 @@ export default class WithdrawModal extends React.Component {
         <div styleName="lowLevel" style={{ marginBottom: '50px' }}>
           <div styleName="additionalСurrencies">
             <span
-              styleName={cx('additionalСurrenciesItem', { additionalСurrenciesItemActive: selectedValue === currentActiveAsset.currency })}
-              onClick={() => this.setAdditionCurrency(currentActiveAsset.currency)}
-            >
-              {currentActiveAsset.currency}
-            </span>
-            <span styleName="delimiter"></span>
-            <span
-              styleName={cx('additionalСurrenciesItem', { additionalСurrenciesItemActive: selectedValue === activeFiat })}
+              styleName={cx('additionalСurrenciesItem', { additionalСurrenciesItemActive: activeCurrency.toUpperCase() === activeFiat })}
               onClick={() => this.setAdditionCurrency(activeFiat)}
             >
               {activeFiat}
+            </span>
+            <span styleName="delimiter"></span>
+            <span
+              styleName={cx('additionalСurrenciesItem', { additionalСurrenciesItemActive: activeCurrency.toUpperCase() === currentActiveAsset.currency })}
+              onClick={() => this.setAdditionCurrency(currentActiveAsset.currency)}
+            >
+              {currentActiveAsset.currency}
             </span>
           </div>
           <p styleName="balance">

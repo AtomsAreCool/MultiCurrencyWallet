@@ -29,6 +29,7 @@ import DashboardLayout from 'components/layout/DashboardLayout/DashboardLayout'
 
 import getCurrencyKey from 'helpers/getCurrencyKey'
 
+
 const isWidgetBuild = config && config.isWidget
 
 @connect(({ signUp: { isSigned } }) => ({
@@ -44,11 +45,13 @@ const isWidgetBuild = config && config.isWidget
       ethData,
       btcData,
       activeFiat,
+      activeCurrency,
       btcMultisigSMSData,
       btcMultisigUserData,
       isFetching,
       isBalanceFetching,
       tokensData,
+      multisigStatus,
     },
   }) => ({
     items: [
@@ -66,7 +69,9 @@ const isWidgetBuild = config && config.isWidget
     txHistory: transactions,
     swapHistory,
     isFetching,
+    activeCurrency,
     isBalanceFetching,
+    multisigStatus,
   })
 )
 @injectIntl
@@ -213,6 +218,8 @@ export default class CurrencyWallet extends Component {
       match: {
         params: { address = null },
       },
+      activeCurrency,
+      activeFiat
     } = this.props
 
     if (currency) {
@@ -242,7 +249,7 @@ export default class CurrencyWallet extends Component {
     const targetCurrency = getCurrencyKey(currency.toLowerCase(), true)
     const isToken = helpers.ethToken.isEthToken({ name: currency })
 
-    const withdrawUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/withdraw`
+    const withdrawUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/send`
     const receiveUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/receive`
 
     if (this.props.history.location.pathname.toLowerCase() === withdrawUrl.toLowerCase() && balance !== 0) {
@@ -258,6 +265,9 @@ export default class CurrencyWallet extends Component {
         hiddenCoinsList,
         currencyRate: itemCurrency.currencyRate,
       })
+      if (activeCurrency.toUpperCase() !== activeFiat) {
+        actions.user.pullActiveCurrency(currency.toLowerCase())
+      }
     }
     if (this.props.history.location.pathname.toLowerCase() === receiveUrl.toLowerCase()) {
       actions.modals.open(constants.modals.ReceiveModal, {
@@ -282,6 +292,7 @@ export default class CurrencyWallet extends Component {
         params: { address = null, fullName = null, ticker = null, action = null },
       },
       hiddenCoinsList,
+      activeCurrency
     } = this.props
 
     let {
@@ -389,15 +400,14 @@ export default class CurrencyWallet extends Component {
           },
           () => {
             if (prevProps.location.pathname !== this.props.location.pathname) {
-              if (localStorage.getItem(constants.localStorage.balanceActiveCurrency).toUpperCase() !== activeFiat) {
-                localStorage.setItem(constants.localStorage.balanceActiveCurrency, currency.toLowerCase())
+              if (activeCurrency.toUpperCase() !== activeFiat) {
+                actions.user.pullActiveCurrency(currency.toLowerCase())
               }
-              
             }
             const targetCurrency = getCurrencyKey(currency.toLowerCase(), true)
             const isToken = helpers.ethToken.isEthToken({ name: currency })
 
-            const withdrawUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/withdraw`
+            const withdrawUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/send`
             const receiveUrl = (isToken ? '/token' : '') + `/${targetCurrency}/${address}/receive`
             const currentUrl = this.props.location.pathname.toLowerCase()
 
@@ -484,7 +494,7 @@ export default class CurrencyWallet extends Component {
 
     const isToken = helpers.ethToken.isEthToken({ name: currency })
 
-    history.push(localisedUrl(locale, (isToken ? '/token' : '') + `/${targetCurrency}/${address}/withdraw`))
+    history.push(localisedUrl(locale, (isToken ? '/token' : '') + `/${targetCurrency}/${address}/send`))
 
     /*
     actions.modals.open(withdrawModal, {
@@ -518,9 +528,12 @@ export default class CurrencyWallet extends Component {
   }
 
   rowRender = (row, rowIndex) => {
-    const { history } = this.props
+    const {
+      history,
+      activeFiat,
+    } = this.props
 
-    return <Row key={rowIndex} {...row} history={history} />
+    return <Row key={rowIndex} {...row} activeFiat={activeFiat} history={history} />
   }
 
   handleFilterChange = ({ target }) => {
@@ -577,6 +590,8 @@ export default class CurrencyWallet extends Component {
       isSigned,
       isBalanceFetching,
       activeFiat,
+      multisigStatus,
+      activeCurrency,
     } = this.props
 
     const {
@@ -676,6 +691,7 @@ export default class CurrencyWallet extends Component {
         <Slider
           settings={settings}
           isSigned={isSigned}
+          multisigStatus={multisigStatus}
           handleNotifyBlockClose={this.handleNotifyBlockClose}
           {...this.state}
         />
@@ -690,6 +706,7 @@ export default class CurrencyWallet extends Component {
                 currencyBalance={balance}
                 fiatBalance={currencyFiatBalance}
                 changePercent={changePercent}
+                activeCurrency={activeCurrency}
                 isFetching={isBalanceFetching}
                 handleReceive={this.handleReceive}
                 handleWithdraw={this.handleWithdraw}

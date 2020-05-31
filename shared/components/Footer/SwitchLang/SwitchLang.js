@@ -27,15 +27,15 @@ export default class SwitchLang extends Component {
     return (
       <div styleName="langSwitcher">
         <a
-          href={locale.toUpperCase() === 'RU, NL' ? `#${relocalisedUrl(locale)}` : undefined}
+          href={locale.toUpperCase() === 'RU' ? `#${relocalisedUrl(locale)}` : undefined}
           styleName="language"
           onClick={(e) => { this.switchLang(e, 'EN'); return false }}
         >
-          <FormattedMessage id="SwitchLang20" defaultMessage="EN " />
+          <FormattedMessage id="SwitchLang20" defaultMessage="EN" />
         </a>
         |
         <a
-          href={locale.toUpperCase() === 'EN, NL' ? `#${relocalisedUrl(locale)}` : undefined}
+          href={locale.toUpperCase() === 'EN' ? `#${relocalisedUrl(locale)}` : undefined}
           styleName="language"
           onClick={(e) => { this.switchLang(e, 'RU'); return false }}
         >
@@ -43,11 +43,11 @@ export default class SwitchLang extends Component {
         </a>
         |
         <a
-          href={locale.toUpperCase() === 'RU, EN' ? `#${relocalisedUrl(locale)}` : undefined}
+          href={locale.toUpperCase() === 'NL' ? `#${relocalisedUrl(locale)}` : undefined}
           styleName="language"
           onClick={(e) => { this.switchLang(e, 'NL'); return false }}
         >
-          <FormattedMessage id="SwitchLang24" defaultMessage=" RU, EN" />
+          <FormattedMessage id="SwitchLang24" defaultMessage=" NL" />
         </a>
       </div>
     )

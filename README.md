@@ -2,7 +2,7 @@
 
 ## Open-source Multicurrency wallet for Bitcoin and custom assets, and p2p excahnge
 
-Live version here: https://swaponline.github.io . 
+Live version here: https://swaponline.github.io  
 
 No coding skills? Buy WordPress plugin https://codecanyon.net/item/multicurrency-crypto-wallet-and-exchange-widgets-for-wordpress/23532064 with admin panel. Installation 100$ (send us assess to your server t.me/sashanoxon)
 
@@ -168,18 +168,23 @@ git pull
 
 if you have conflicts (if sources has been changed on your side) click "resolve conflicts".
 
-# DeFi style (borrow/lend) 
-![](https://screenshots.wpmix.net/chrome_ta4cbcsWgMjqbYSp9rFTwMa5bJDBYjcF.png) 
-https://drive.google.com/file/d/15e0ODxzbtiu0xJOeKKuJ2SzffZmc5_OA/view 
-
 for any questions: telegram <a href="https://t.me/sashanoxon">sashanoxon</a>
 
 ## how to change project name in "many tabs" errors:
 0. go to index.html
 1. add / edit  ```window.widgetName``` to your own
-
+.
 ## how to change title:
 0. go to index.html
 1. add / edit  ```window.defaultWindowTitle``` to your own
+.
+
+## how change link in logo (Default main wallet page)
+0. go to index.html
+1. add / edit ```window.LOGO_REDIRECT_LINK``` to your own
+
+## how add custum exchange Rate:
+0. add ```customEcxchangeRate``` to ```window.widgetERC20Tokens```
+1. add usd price for ```window.widgetERC20Tokens```
 .
 SUM Branch init 5/9/20

@@ -8,20 +8,13 @@ import { isMobile } from 'react-device-detect'
 import cssModules from 'react-css-modules'
 import styles from './Row.scss'
 
-import { Link } from 'react-router-dom'
-import CopyToClipboard from 'react-copy-to-clipboard'
-import LinkAccount from '../components/LinkAccount'
-
 import Coin from 'components/Coin/Coin'
 import InlineLoader from 'components/loaders/InlineLoader/InlineLoader'
-import BtnTooltip from 'components/controls/WithdrawButton/BtnTooltip'
 import DropdownMenu from 'components/ui/DropdownMenu/DropdownMenu'
 // import LinkAccount from '../LinkAccount/LinkAcount'
 import { withRouter } from 'react-router'
-import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
-import CurrencyButton from 'components/controls/CurrencyButton/CurrencyButton'
-import { relocalisedUrl, localisedUrl } from 'helpers/locale'
+import { localisedUrl } from 'helpers/locale'
 import SwapApp from 'swap.app'
 import { BigNumber } from 'bignumber.js'
 
@@ -129,6 +122,9 @@ export default class Row extends Component {
       case 'BTC (Multisig)':
         await actions.btcmultisig.getBalanceUser(address)
         break
+      case 'BTC (PIN-Protected)':
+        await actions.btcmultisig.getBalancePin()
+        break
       default:
         await actions[currency.toLowerCase()].getBalance(
           currency.toLowerCase(),
@@ -221,6 +217,7 @@ export default class Row extends Component {
     switch (currency.toLowerCase()) {
       case 'btc (multisig)':
       case 'btc (sms-protected)':
+      case 'btc (pin-protected)':
         targetCurrency = 'btc'
         break
     }
@@ -305,6 +302,10 @@ export default class Row extends Component {
 
   handleActivateProtected = async () => {
     actions.modals.open(constants.modals.RegisterSMSProtected, {})
+  }
+
+  handleActivatePinProtected = async () => {
+    actions.modals.open(constants.modals.RegisterPINProtected, {})
   }
 
   handleGenerateMultisignLink = async () => {
@@ -417,7 +418,7 @@ export default class Row extends Component {
     const {
       history,
       intl: { locale },
-      itemData: { currency, balance },
+      itemData: { currency },
     } = this.props
     history.push(localisedUrl(locale, `/${currency.toLowerCase()}-btc`))
   }
@@ -433,6 +434,7 @@ export default class Row extends Component {
     switch (currency.toLowerCase()) {
       case 'btc (multisig)':
       case 'btc (sms-protected)':
+      case 'btc (pin-protected)':
         targetCurrency = 'btc'
         break
     }
@@ -476,19 +478,25 @@ export default class Row extends Component {
 
   copy = () => {
     const {
-      itemData: { address },
+      itemData: { address, fullName },
     } = this.props
-    navigator.clipboard.writeText(address)
+
+    actions.modals.open(constants.modals.WalletAddressModal, {
+      address,
+      fullName,
+    })
   }
 
   copyPrivateKey = () => {
     const {
-      itemData: { address, privateKey },
+      itemData: { address, privateKey, fullName },
       ethDataHelper,
     } = this.props
-    navigator.clipboard.writeText(
-      address === ethDataHelper.address ? ethDataHelper.privateKey : privateKey
-    )
+
+    actions.modals.open(constants.modals.PrivateKeysModal, {
+      key: address === ethDataHelper.address ? ethDataHelper.privateKey : privateKey,
+      fullName,
+    })
   }
 
 
@@ -498,6 +506,13 @@ export default class Row extends Component {
 
     const fiatRate = fiatsRates.find(({ key }) => key === activeFiat)
     return fiatRate.value
+  }
+
+  getCustomRate = (cur) => {
+    const wTokens = window.widgetERC20Tokens
+
+    const dataobj = wTokens && Object.keys(wTokens).find(el => el === cur.toLowerCase())
+    return dataobj ? (wTokens[dataobj] || { customEcxchangeRate: null }).customEcxchangeRate : null
   }
 
   render() {
@@ -528,13 +543,14 @@ export default class Row extends Component {
 
     let currencyView = currency
 
-    let inneedData = null
     let nodeDownErrorShow = true
     let currencyFiatBalance = 0
 
     const isWidgetBuild = config && config.isWidget
 
-    if (itemData.infoAboutCurrency) {
+    if (this.getCustomRate(currency)) {
+      currencyFiatBalance = BigNumber(balance).multipliedBy(this.getCustomRate(currency)).multipliedBy(multiplier || 1)
+    } else if (itemData.infoAboutCurrency) {
       currencyFiatBalance = BigNumber(balance).multipliedBy(itemData.infoAboutCurrency.price_usd).multipliedBy(multiplier || 1)
     }
 
@@ -649,6 +665,7 @@ export default class Row extends Component {
 
     if (currencyView == 'BTC (Multisig)') currencyView = 'BTC'
     if (currencyView == 'BTC (SMS-Protected)') currencyView = 'BTC'
+    if (currencyView == 'BTC (PIN-Protected)') currencyView = 'BTC'
 
     if (currencyView !== 'BTC') {
       dropDownMenuItems.push({
@@ -692,11 +709,45 @@ export default class Row extends Component {
       })
     }
 
+    let showBalance = true
+    let statusInfo = false
+
+    if (
+      this.props.itemData.isPinProtected &&
+      !this.props.itemData.isRegistered
+    ) {
+      statusInfo = 'Not activated'
+      showBalance = false
+      nodeDownErrorShow = false
+      dropDownMenuItems = [
+        {
+          id: 1,
+          title: (
+            <FormattedMessage
+              id="WalletRow_Menu_ActivatePinProtected"
+              defaultMessage="Activate"
+            />
+          ),
+          action: this.handleActivatePinProtected,
+          disabled: false,
+        },
+        {
+          id: 1011,
+          title: (
+            <FormattedMessage id="WalletRow_Menu_Hide" defaultMessage="Hide" />
+          ),
+          action: this.hideCurrency,
+          disabled: false,
+        },
+      ]
+    }
+
     if (
       this.props.itemData.isSmsProtected &&
       !this.props.itemData.isRegistered
     ) {
-      currencyView = 'Not activated'
+      statusInfo = 'Not activated'
+      showBalance = false
       nodeDownErrorShow = false
       dropDownMenuItems = [
         {
@@ -722,7 +773,8 @@ export default class Row extends Component {
     }
     if (this.props.itemData.isUserProtected) {
       if (!this.props.itemData.active) {
-        currencyView = 'Not joined'
+        statusInfo = 'Not joined'
+        showBalance = false
         nodeDownErrorShow = false
         dropDownMenuItems = []
       } else {
@@ -771,6 +823,17 @@ export default class Row extends Component {
             >
               <Coin className={styles.assetsTableIcon} name={currency} />
             </a>
+            <div styleName="assetsTableInfo">
+              <div styleName="nameRow">
+                <a
+                  onClick={this.goToCurrencyHistory}
+                  title={`Online ${fullName} wallet`}
+                >
+                  {fullName}
+                </a>
+              </div>
+              {title ? <strong>{title}</strong> : ''}
+            </div>
             {balanceError && nodeDownErrorShow ? (
               <div className={styles.errorMessage}>
                 <FormattedMessage
@@ -788,76 +851,76 @@ export default class Row extends Component {
                 ''
               )}
             <span styleName="assetsTableCurrencyWrapper">
-              {!isBalanceFetched || isBalanceFetching ? (
-                this.props.itemData.isUserProtected &&
-                  !this.props.itemData.active ? (
-                    <span>
-                      <FormattedMessage
-                        id="walletMultisignNotJoined"
-                        defaultMessage="Not joined"
-                      />
-                    </span>
-                  ) : (
-                    <div styleName="loader">
-                      {!(balanceError && nodeDownErrorShow) && <InlineLoader />}
-                    </div>
-                  )
-              ) : (
-                  <div
-                    styleName="no-select-inline"
-                    onClick={this.handleReloadBalance}
-                  >
-                    <i className="fas fa-sync-alt" styleName="icon" />
-                    <span>
-                      {balanceError
-                        ? '?'
-                        : BigNumber(balance)
-                          .dp(5, BigNumber.ROUND_FLOOR)
-                          .toString()}{' '}
-                    </span>
-                    <span styleName="assetsTableCurrencyBalance">
-                      {currencyView}
-                    </span>
-                    {unconfirmedBalance !== 0 && (
-                      <Fragment>
-                        <br />
-                        <span
-                          styleName="unconfirmedBalance"
-                          title={intl.formatMessage(
-                            langLabels.unconfirmedBalance
-                          )}
-                        >
-                          {unconfirmedBalance > 0 && <>{'+'}</>}
-                          {unconfirmedBalance}{' '}
+              {showBalance && (
+                <Fragment>
+                  {!isBalanceFetched || isBalanceFetching ? (
+                    this.props.itemData.isUserProtected &&
+                      !this.props.itemData.active ? (
+                        <span>
+                          <FormattedMessage
+                            id="walletMultisignNotJoined"
+                            defaultMessage="Not joined"
+                          />
                         </span>
-                      </Fragment>
+                      ) : (
+                        <div styleName="loader">
+                          {!(balanceError && nodeDownErrorShow) && <InlineLoader />}
+                        </div>
+                      )
+                  ) : (
+                      <div
+                        styleName="no-select-inline"
+                        onClick={this.handleReloadBalance}
+                      >
+                        <i className="fas fa-sync-alt" styleName="icon" />
+                        <span>
+                          {balanceError
+                            ? '?'
+                            : BigNumber(balance)
+                              .dp(5, BigNumber.ROUND_FLOOR)
+                              .toString()}{' '}
+                        </span>
+                        <span styleName="assetsTableCurrencyBalance">
+                          {currencyView}
+                        </span>
+                        {unconfirmedBalance !== 0 && (
+                          <Fragment>
+                            <br />
+                            <span
+                              styleName="unconfirmedBalance"
+                              title={intl.formatMessage(
+                                langLabels.unconfirmedBalance
+                              )}
+                            >
+                              {unconfirmedBalance > 0 && <>{'+'}</>}
+                              {unconfirmedBalance}{' '}
+                            </span>
+                          </Fragment>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
+                </Fragment>
+              )}
             </span>
-            {itemData.address !== 'Not jointed' ? (
-              <p styleName="addressStyle">{itemData.address}</p>
-            ) : (
-                ''
-              )}
             {isMobile ? (
-              <PartOfAddress {...itemData} onClick={this.goToCurrencyHistory} />
+              <Fragment>
+                {!statusInfo ? (
+                  <PartOfAddress {...itemData} onClick={this.goToCurrencyHistory} />
+                ) : (
+                  <p styleName="statusStyle">{statusInfo}</p>
+                )}
+              </Fragment>
             ) : (
-                ''
-              )}
-            <div styleName="assetsTableInfo">
-              <div styleName="nameRow">
-                <a
-                  onClick={this.goToCurrencyHistory}
-                  title={`Online ${fullName} wallet`}
-                >
-                  {fullName}
-                </a>
-              </div>
-              {title ? <strong>{title}</strong> : ''}
-            </div>
+              <Fragment>
+                {!statusInfo ? (
+                  <p styleName="addressStyle">{itemData.address}</p>
+                ) : (
+                  <p styleName="addressStyle">{statusInfo}</p>
+                )}
+              </Fragment>
+            )}
 
-            {currencyFiatBalance && !balanceError ? (
+            {currencyFiatBalance && showBalance && !balanceError ? (
               <div styleName="assetsTableValue">
                 {/* <img src={dollar} /> */}
                 <p>{BigNumber(currencyFiatBalance).dp(2, BigNumber.ROUND_FLOOR).toString()}</p>

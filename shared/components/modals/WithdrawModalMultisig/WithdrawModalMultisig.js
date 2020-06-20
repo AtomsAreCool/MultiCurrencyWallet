@@ -29,6 +29,7 @@ import QrReader from "components/QrReader";
 
 import redirectTo from 'helpers/redirectTo'
 import AdminFeeInfoBlock from 'components/AdminFeeInfoBlock/AdminFeeInfoBlock'
+import lsDataCache from 'helpers/lsDataCache'
 
 
 @injectIntl
@@ -194,7 +195,7 @@ export default class WithdrawModalMultisig extends React.Component {
   onFinishWithdraw = async (txId) => {
     const {
       amount,
-      to,
+      address: to,
     } = this.state
 
     const {
@@ -226,6 +227,20 @@ export default class WithdrawModalMultisig extends React.Component {
     })
     */
 
+    // Сохраняем транзакцию в кеш
+    const txInfoCache = {
+      amount,
+      senderAddress: address,
+      receiverAddress: to,
+      confirmed: false,
+    }
+
+    lsDataCache.push({
+      key: `TxInfo_btc_${txId}`,
+      time: 3600,
+      data: txInfoCache,
+    })
+    
     this.setState({
       isShipped: false,
       error: false,
@@ -790,9 +805,6 @@ export default class WithdrawModalMultisig extends React.Component {
 
         {step === 'confirm' &&
           <Fragment>
-            <p styleName="notice dashboardViewNotice">
-              <FormattedMessage id="Withdrow2222" defaultMessage="Send SMS code" />
-            </p>
             <div styleName="highLevel smsCodeHolder">
               <FieldLabel label>
                 <FormattedMessage id="Withdrow2223" defaultMessage="SMS code" />
@@ -840,7 +852,7 @@ export default class WithdrawModalMultisig extends React.Component {
             >
               <FormattedMessage id="Withdrow2224" defaultMessage="Confirm" />
             </Button>
-            <hr />
+            <hr styleName="marginHr" />
             <p styleName="notice mnemonicUseNote dashboardViewNotice">
               <FormattedMessage id="WithdrawSMS_MnemonicNote" defaultMessage="Если у вас нет доступа к телефону или не получается получить код, вы можете воспользовать секретной фразой" />
             </p>

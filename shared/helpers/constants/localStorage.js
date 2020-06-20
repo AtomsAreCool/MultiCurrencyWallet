@@ -20,6 +20,7 @@ export default {
   IEO_signed: 'IEO_signed',
   startSwap: 'startSwap',
   didProtectedBtcCreated: 'protectedBtcCreated',
+  didPinBtcCreated: `${process.env.ENTRY}:pinBtcCreated`,
   didProtectedBtcG2FACreated: 'protectedBtcG2FA',
   walletTitle: 'walletTitle',
   customERC: 'customERC',
@@ -29,5 +30,5 @@ export default {
   backups: `${process.env.ENTRY}:backups`,
   backups_prefix: `${process.env.ENTRY}:backup:`,
   invoicesEnabled: `${process.env.ENTRY}:invoicesEnabled`,
-  wasOnWidgetWallet: "wasOnWidgetWallet"
+  wasOnWidgetWallet: 'wasOnWidgetWallet'
 }

@@ -1,4 +1,6 @@
-import plugins from "plugins";
+import plugins from 'plugins';
+import config from 'helpers/externalConfig'
+
 
 let isLocalStorageEnabled
 
@@ -12,7 +14,7 @@ catch (e) {
 }
 
 const getPluginMethod = (name, data) => {
-  if (plugins && plugins[name] && typeof plugins[name] === "function") {
+  if (plugins && plugins[name] && typeof plugins[name] === 'function') {
     return plugins[name](data)
   }
   throw new Error(`plugin code error or plugin function is not exist, check ${name} function in plugins derectory`)
@@ -20,7 +22,13 @@ const getPluginMethod = (name, data) => {
 
 const setItem = (key, value) => {
   if (isLocalStorageEnabled) {
-    const { setItemPlugin } = window
+    const setItemPlugin = (
+      config
+      && config.opts
+      && config.opts.plugins
+      && config.opts.plugins.setItemPlugin
+    ) ? config.opts.plugins.setItemPlugin : false
+
     if (setItemPlugin) {
       getPluginMethod(setItemPlugin, { key, value })
     } else {
@@ -31,7 +39,14 @@ const setItem = (key, value) => {
 
 const getItem = (key) => {
   if (isLocalStorageEnabled) {
-    const { getItemPlugin, localStorage } = window
+    const { localStorage } = window
+    const getItemPlugin = (
+      config
+      && config.opts
+      && config.opts.plugins
+      && config.opts.plugins.getItemPlugin
+    ) ? config.opts.plugins.getItemPlugin : false
+
     if (getItemPlugin) {
       return getPluginMethod(getItemPlugin, { key })
     }

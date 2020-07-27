@@ -27,7 +27,9 @@ import BalanceForm from 'components/BalanceForm/BalanceForm'
 
 import { BigNumber } from 'bignumber.js'
 
+
 const isWidgetBuild = config && config.isWidget
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 
 @connect(
   ({
@@ -142,7 +144,6 @@ export default class Wallet extends Component {
 
   componentDidUpdate(prevProps) {
     const {
-      activeFiat,
       match: {
         params: { page = null },
       },
@@ -151,16 +152,11 @@ export default class Wallet extends Component {
 
 
     const {
-      activeFiat: prevFiat,
       match: {
         params: { page: prevPage = null },
       },
       multisigPendingCount: prevMultisigPendingCount,
     } = prevProps
-
-    if (activeFiat !== prevFiat) {
-      this.getFiats()
-    }
 
     if (page !== prevPage || multisigPendingCount !== prevMultisigPendingCount) {
       let activeView = 0
@@ -176,6 +172,7 @@ export default class Wallet extends Component {
   }
 
   componentDidMount() {
+    console.log('Wallet mounted')
     const { params, url } = this.props.match
     const {
       multisigPendingCount,
@@ -185,8 +182,6 @@ export default class Wallet extends Component {
 
     actions.user.fetchMultisigStatus()
 
-    this.getFiats()
-
     if (url.includes('send')) {
       this.handleWithdraw(params)
     }
@@ -194,6 +189,10 @@ export default class Wallet extends Component {
     this.setState({
       multisigPendingCount,
     })
+  }
+
+  componentWillUnmount() {
+    console.log('Wallet unmounted')
   }
 
   getInfoAboutCurrency = async () => {
@@ -229,9 +228,9 @@ export default class Wallet extends Component {
       history,
       intl: { locale },
     } = this.props
-
     if (isWidgetBuild && !config.isFullBuild) {
-      history.push(localisedUrl(locale, links.pointOfSell))
+      // was pointOfSell
+      history.push(localisedUrl(locale, links.exchange))
     } else {
       history.push(localisedUrl(locale, links.exchange))
     }
@@ -350,17 +349,6 @@ export default class Wallet extends Component {
   }
 
 
-  getFiats = async () => {
-    const { activeFiat } = this.props
-    const { fiatsRates } = await actions.user.getFiats()
-
-    if (fiatsRates) {
-      const fiatRate = fiatsRates.find(({ key }) => key === activeFiat)
-      this.setState(() => ({ multiplier: fiatRate.value }))
-    }
-  }
-
-
   handleModalOpen = context => {
     const { enabledCurrencies } = this.state
     const { hiddenCoinsList } = this.props
@@ -403,7 +391,6 @@ export default class Wallet extends Component {
 
   render() {
     const {
-      multiplier,
       activeView,
       infoAboutCurrency,
       enabledCurrencies,
@@ -457,8 +444,8 @@ export default class Wallet extends Component {
     if (isWidgetBuild) {
       //tableRows = allData.filter(({ currency }) => widgetCurrencies.includes(currency))
       tableRows = allData.filter(
-        ({ currency, address }) =>
-          !hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`)
+        ({ currency, address,  balance }) =>
+          !hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`) || balance > 0
       )
       // Отфильтруем валюты, исключив те, которые не используются в этом билде
       tableRows = tableRows.filter(({ currency }) => widgetCurrencies.includes(currency))
@@ -470,9 +457,8 @@ export default class Wallet extends Component {
       return ({
         ...el,
         balance: el.balance,
-        fiatBalance: (el.balance > 0 && el.infoAboutCurrency) ? BigNumber(el.balance)
-          .multipliedBy(el.infoAboutCurrency.price_usd)
-          .multipliedBy(multiplier || 1)
+        fiatBalance: (el.balance > 0 && el.infoAboutCurrency && el.infoAboutCurrency.price_fiat) ? BigNumber(el.balance)
+          .multipliedBy(el.infoAboutCurrency.price_fiat)
           .dp(2, BigNumber.ROUND_FLOOR) : 0
       })
     })
@@ -493,8 +479,10 @@ export default class Wallet extends Component {
     return (
       <DashboardLayout
         page={page}
+        isDark={isDark}
         BalanceForm={(
           <BalanceForm
+            isDark={isDark}
             activeFiat={activeFiat}
             fiatBalance={allFiatBalance}
             currencyBalance={btcBalance}
@@ -507,12 +495,14 @@ export default class Wallet extends Component {
             type="wallet"
             currency="btc"
             infoAboutCurrency={infoAboutCurrency}
+            multisigPendingCount={multisigPendingCount}
           />
         )}
       >
         {
           activeView === 0 &&
           <CurrenciesList
+            isDark={isDark}
             tableRows={tableRows}
             {...this.state}
             {...this.props}
@@ -521,8 +511,8 @@ export default class Wallet extends Component {
             getExCurrencyRate={(currencySymbol, rate) => this.getExCurrencyRate(currencySymbol, rate)}
           />
         }
-        {activeView === 1 && (<History {...this.props} />)}
-        {activeView === 2 && (<InvoicesList {...this.props} onlyTable={true} />)}
+        {activeView === 1 && (<History {...this.props} isDark={isDark} />)}
+        {activeView === 2 && (<InvoicesList {...this.props} onlyTable={true} isDark={isDark} />)}
       </DashboardLayout>
     )
   }

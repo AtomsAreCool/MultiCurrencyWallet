@@ -9,13 +9,15 @@ import { isMobile } from 'react-device-detect'
 import helpers, { constants, links, request } from 'helpers'
 import actions from 'redux/actions'
 import { localisedUrl } from 'helpers/locale'
+import getCurrencyKey from 'helpers/getCurrencyKey'
 
 
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 @cssModules(styles, { allowMultiple: true })
 export default class CurrencyList extends Component {
   constructor(props) {
     super(props)
-    
+
     this.state = {
       isAssetsOpen: false,
     }
@@ -68,7 +70,7 @@ export default class CurrencyList extends Component {
     return (
       <>
         <div
-          styleName="customSelectValue"
+          styleName={`customSelectValue ${isDark ? 'dark' : ''}`}
           onClick={() => this.setState(({ isAssetsOpen }) => ({ isAssetsOpen: !isAssetsOpen }))}
         >
           <div styleName="coin">
@@ -83,11 +85,11 @@ export default class CurrencyList extends Component {
           </div>
           <div styleName="amount">
             <span styleName="currency">
-              {currentBalance} {currency}
+              {currentBalance} {getCurrencyKey(currency, true).toUpperCase()}
             </span>
             <span styleName="usd">
-              {(currentActiveAsset.infoAboutCurrency && currentActiveAsset.currencyRate)
-                ? (currentBalance * currentActiveAsset.currencyRate).toFixed(2)
+              {(currentActiveAsset.infoAboutCurrency && currentActiveAsset.infoAboutCurrency.price_fiat)
+                ? (currentBalance * currentActiveAsset.infoAboutCurrency.price_fiat).toFixed(2)
                 : (currentBalance * exCurrencyRate).toFixed(2)}{' '}
               {activeFiat}
             </span>
@@ -95,7 +97,7 @@ export default class CurrencyList extends Component {
           <div styleName={cx('customSelectArrow', { active: isAssetsOpen })}></div>
         </div>
         {isAssetsOpen && (
-          <div styleName="customSelectList">
+          <div styleName={`customSelectList ${isDark ? 'darkList' : ''}`}>
             {tableRows.map((item, index) => (
               <div key={index}
                 styleName={cx('customSelectListItem customSelectValue', {
@@ -115,11 +117,11 @@ export default class CurrencyList extends Component {
                 </div>
                 <div styleName="amount">
                   <span styleName="currency">
-                    {item.balance} {item.currency}
+                    {item.balance} {getCurrencyKey(item.currency, true).toUpperCase()}
                   </span>
                   <span styleName="usd">
-                    {(item.infoAboutCurrency && item.currencyRate)
-                      ? (item.balance * item.currencyRate).toFixed(2)
+                    {(item.infoAboutCurrency && item.infoAboutCurrency.price_fiat)
+                      ? (item.balance * item.infoAboutCurrency.price_fiat).toFixed(2)
                       : (item.balance * exCurrencyRate).toFixed(2)}{' '}
                     {activeFiat}
                   </span>

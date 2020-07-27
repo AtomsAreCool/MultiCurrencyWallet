@@ -193,15 +193,27 @@ export default class RegisterPINProtected extends React.Component {
     super(props)
 
 
+    const {
+      data: {
+        initStep,
+      },
+    } = props
+
     const generatedKey = localStorage.getItem(constants.privateKeyNames.btcSmsMnemonicKeyGenerated)
 
     const mnemonic = localStorage.getItem(constants.privateKeyNames.twentywords)
-    const mnemonicSaved = true //(mnemonic === `-`)
+    const mnemonicSaved = (mnemonic === `-`)
     const useGeneratedKeyEnabled = !(!generatedKey)
 
 
     let step = 'enterPinCode'
     if (useGeneratedKeyEnabled && !mnemonicSaved) step = 'saveMnemonicWords'
+
+    let showFinalInstruction = false
+    if (initStep === 'export') {
+      showFinalInstruction = true
+      step = 'ready'
+    }
 
     this.state = {
       pinCode: '',
@@ -209,7 +221,7 @@ export default class RegisterPINProtected extends React.Component {
       step,
       error: false,
       isShipped: false,
-      showFinalInstruction: false,
+      showFinalInstruction,
       useGeneratedKey: useGeneratedKeyEnabled,
       generatedKey,
       useGeneratedKeyEnabled,
@@ -223,6 +235,10 @@ export default class RegisterPINProtected extends React.Component {
       isInstructionCopied: false,
       isInstructionDownloaded: false,
     }
+  }
+
+  componentDidMount() {
+    this.generateRestoreInstruction()
   }
 
   handleRestoreWallet = async () => {
@@ -398,6 +414,7 @@ export default class RegisterPINProtected extends React.Component {
       mnemonic,
       mnemonicWallet,
       useGeneratedKey,
+      generatedKey,
     } = this.state
 
     const {
@@ -416,7 +433,9 @@ export default class RegisterPINProtected extends React.Component {
     if (btcMultisigPinData.publicKeys[1]) restoreInstruction+=`${btcMultisigPinData.publicKeys[1].toString('Hex')}\r\n`
     if (btcMultisigPinData.publicKeys[2]) restoreInstruction+=`${btcMultisigPinData.publicKeys[2].toString('Hex')}\r\n`
     restoreInstruction+= `\r\n`
-    restoreInstruction+= `Hot wallet private key (WIF):\r\n`
+    restoreInstruction+= `Hot wallet private key (WIF) (first of three for sign tx):\r\n`
+    restoreInstruction+= `Wallet delivery path from your secret phrase:\r\n`
+    restoreInstruction+= `m/44'/0'/0'/0/0\r\n`
     restoreInstruction+= `${btcData.privateKey}\r\n`
     restoreInstruction+= `*** (this private key stored in your browser)\r\n`
     restoreInstruction+= `\r\n`
@@ -428,6 +447,11 @@ export default class RegisterPINProtected extends React.Component {
       restoreInstruction+= `Private key (WIF) of wallet, generated from mnemonic:\r\n`
       restoreInstruction+= `(DELETE THIS LINE!) ${mnemonicWallet.WIF}\r\n`
       restoreInstruction+= `*** (this private key does not stored anywhere! but in case if our  2fa server does down, you can withdraw your fond using this private key)\r\n`
+    } else {
+      restoreInstruction+= `Second of three for sign tx:\r\n`
+      restoreInstruction+= `Wallet delivery path from your secret phrase:\r\n`
+      restoreInstruction+= `m/44'/0'/0'/0/1\r\n`
+      restoreInstruction+= `\r\n`
     }
     restoreInstruction+= `If our service is unavailable, use a local copy of the wallet.\r\n`
     restoreInstruction+= `https://swaponline.github.io/2fa_wallet.zip\r\n`
@@ -642,7 +666,6 @@ export default class RegisterPINProtected extends React.Component {
                   valueLink={linked.pinCodeConfirm}
                   type="password"
                   placeholder={`${intl.formatMessage(langs.pinCodeConfirmPlaceHolder)}`}
-                  focusOnInit
                 />
                 {!pinServerOffline && error && <div styleName="error rednotes">{error}</div>}
                 {pinServerOffline && (

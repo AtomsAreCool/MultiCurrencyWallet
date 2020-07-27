@@ -17,6 +17,9 @@ import ethToken from 'helpers/ethToken'
 import { links } from 'helpers'
 import { getFullOrigin } from 'helpers/links'
 
+
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+
 class Row extends React.PureComponent {
 
   constructor(props) {
@@ -242,7 +245,7 @@ class Row extends React.PureComponent {
 
     return (
       <>
-        <tr styleName='historyRow'>
+        <tr styleName={`historyRow ${isDark ? 'dark' : ''}`}>
           <td>
             <div styleName={`${statusStyleAmount} circleIcon`}>
               <div styleName='arrowWrap'>

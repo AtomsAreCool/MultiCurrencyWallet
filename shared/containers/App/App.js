@@ -64,9 +64,8 @@ export default class App extends React.Component {
     this.state = {
       fetching: false,
       multiTabs: false,
-      error: ""
-    };
-    actions.user.getFiats()
+      error: "",
+    }
   }
 
 
@@ -139,10 +138,25 @@ export default class App extends React.Component {
 
     this.preventMultiTabs();
 
+    if (window.origin === `https://wallet.b` + `itpli` + `cit` + `y.com`) {
+      const tokenListUpdated = localStorage.getItem('widget_tokenupdated')
+      if (!tokenListUpdated) {
+        localStorage.setItem('widget_tokenupdated', true)
+        Object.keys(config.erc20).forEach((tokenCode) => {
+          if ((tokenCode !== `bitpl`)
+            && (tokenCode !== `usdt`)
+          ) {
+            console.log('Hide', tokenCode)
+            actions.core.markCoinAsHidden(tokenCode.toUpperCase())
+          }
+        })
+      }
+    }
+
     const isWalletCreate = localStorage.getItem(constants.localStorage.isWalletCreate);
 
     if (!isWalletCreate) {
-      if (config && config.isWidget) {
+      if (config && config.isWidget && false) {
         currencies.forEach(({ name }) => {
           if (name !== "BTC" && !config.erc20[name.toLowerCase()]) {
             actions.core.markCoinAsHidden(name);
@@ -225,6 +239,9 @@ export default class App extends React.Component {
   overflowHandler = () => {
     const { modals, dashboardModalsAllowed } = this.props;
     const isAnyModalCalled = Object.keys(modals).length > 0
+
+    const isDark = localStorage.getItem(constants.localStorage.isDark)
+
     if (typeof document !== 'undefined' && isAnyModalCalled && !dashboardModalsAllowed) {
       document.body.classList.remove('overflowY-default')
       document.body.classList.add('overflowY-hidden')
@@ -238,6 +255,10 @@ export default class App extends React.Component {
     } else {
       document.body.classList.remove('overflowY-dashboardView-hidden')
       document.body.classList.add('overflowY-dashboardView-default')
+    }
+
+    if (isDark) {
+      document.body.classList.add('darkTheme')
     }
   }
 

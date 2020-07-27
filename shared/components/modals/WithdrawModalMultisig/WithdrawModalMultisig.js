@@ -32,6 +32,8 @@ import AdminFeeInfoBlock from 'components/AdminFeeInfoBlock/AdminFeeInfoBlock'
 import lsDataCache from 'helpers/lsDataCache'
 
 
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+
 @injectIntl
 @connect(
   ({
@@ -240,7 +242,7 @@ export default class WithdrawModalMultisig extends React.Component {
       time: 3600,
       data: txInfoCache,
     })
-    
+
     this.setState({
       isShipped: false,
       error: false,
@@ -492,7 +494,9 @@ export default class WithdrawModalMultisig extends React.Component {
   addressIsCorrect() {
     const { address } = this.state
 
-    return typeforce.isCoinAddress.BTC(address)
+    if (!typeforce.isCoinAddress.BTC(address)) {
+      return actions.btc.addressIsCorrect(address)
+    } else return true
   }
 
   handleClose = () => {
@@ -686,9 +690,9 @@ export default class WithdrawModalMultisig extends React.Component {
                 </div>
               )}
             </div>
-            <div styleName="lowLevel" style={{ marginBottom: "50px" }}>
+            <div styleName={`lowLevel ${isDark ? 'dark' : ''}`} style={{ marginBottom: '50px' }}>
               <p styleName="balance">
-                {balance} {currency.toUpperCase()}
+                {balance} {`BTC`}
               </p>
               <FieldLabel>
                 <FormattedMessage id="Withdrow118" defaultMessage="Amount " />
@@ -768,7 +772,7 @@ export default class WithdrawModalMultisig extends React.Component {
             {invoice &&
               <Fragment>
                 <hr />
-                <div styleName="lowLevel" style={{ marginBottom: "50px" }}>
+                <div styleName={`lowLevel ${isDark ? 'dark' : ''}`} style={{ marginBottom: '50px' }}>
                   <div styleName="groupField">
                     <div styleName="downLabel">
                       <FieldLabel inRow>

@@ -27,7 +27,7 @@ const hasAdminFee = (config
 ) ? config.opts.fee.btc : false
 
 const getRandomMnemonicWords = () => bip39.generateMnemonic()
-const validateMnemonicWords = (mnemonic) => bip39.validateMnemonic(mnemonic)
+const validateMnemonicWords = (mnemonic) => bip39.validateMnemonic(convertMnemonicToValid(mnemonic))
 
 
 const sweepToMnemonic = (mnemonic, path) => {
@@ -75,9 +75,19 @@ const getSweepAddress = () => {
   return false
 }
 
+const convertMnemonicToValid = (mnemonic) => {
+  return mnemonic
+    .trim()
+    .toLowerCase()
+    .split(` `)
+    .filter((word) => word)
+    .join(` `)
+}
+
 const getWalletByWords = (mnemonic, walletNumber = 0, path) => {
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
-  const root = bip32.fromSeed(seed, btc.network);
+  mnemonic = convertMnemonicToValid(mnemonic)
+  const seed = bip39.mnemonicToSeedSync(mnemonic)
+  const root = bip32.fromSeed(seed, btc.network)
   const node = root.derivePath((path) ? path : `m/44'/0'/0'/0/${walletNumber}`)
 
   const account = bitcoin.payments.p2pkh({
@@ -307,6 +317,10 @@ const fetchBalance = (address) =>
       } catch (e) { /* */ }
       return false
     },
+    inQuery: {
+      delay: 500,
+      name: `balance`,
+    },
   }).then(({ balance }) => balance)
 
 const fetchTxRaw = (txId, cacheResponse) => 
@@ -502,7 +516,10 @@ const getTransaction = (address, ownType) =>
         } catch (e) { /* */ }
         return false
       },
-      query: 'btc_balance',
+      inQuery: {
+        delay: 500,
+        name: `balance`,
+      },
     }).then((res) => {
       const transactions = res.txs.map((item) => {
         const direction = item.vin[0].addr !== address ? 'in' : 'out'
@@ -718,12 +735,37 @@ const signAndBuild = (transactionBuilder, address) => {
 const fetchUnspents = (address) =>
   apiLooper.get('bitpay', `/addr/${address}/utxo`, { cacheResponse: 5000 })
 
-const broadcastTx = (txRaw) =>
-  apiLooper.post('bitpay', `/tx/send`, {
-    body: {
-      rawtx: txRaw,
-    },
+const broadcastTx = (txRaw) => {
+  return new Promise(async (resolve, reject) => {
+    let answer = false
+    try {
+      answer = await apiLooper.post('bitpay', `/tx/send`, {
+        body: {
+          rawtx: txRaw,
+        },
+      })
+    } catch (e) {}
+    if (!answer || !answer.txid) {
+      // use blockcryper
+      const bcAnswer = await apiLooper.post('blockcypher', `/txs/push`, {
+        body: {
+          tx: txRaw,
+        },
+      })
+      if (bcAnswer
+        && bcAnswer.tx
+        && bcAnswer.tx.hash) {
+        resolve({
+          txid: bcAnswer.tx.hash,
+        })
+      } else {
+        reject()
+      }
+    } else {
+      resolve(answer)
+    }
   })
+}
 
 const signMessage = (message, encodedPrivateKey) => {
   const keyPair = bitcoin.ECPair.fromWIF(encodedPrivateKey, [bitcoin.networks.bitcoin, bitcoin.networks.testnet])
@@ -752,7 +794,6 @@ const checkWithdraw = (scriptAddress) => {
       } catch (e) { /* */ }
       return false
     },
-    query: 'btc_balance',
   }).then((res) => {
     if (res.txs.length > 1
       && res.txs[0].vout.length
@@ -801,4 +842,5 @@ export default {
   getTxRouter,
   fetchTxRaw,
   addressIsCorrect,
+  convertMnemonicToValid,
 }

@@ -28,6 +28,7 @@ const isWidgetBuild = config && config.isWidget
 const styleBtn = { backgroundColor: '#f0eefd', color: '#6144E5' }
 const defaultColors = { backgroundColor: '#6144E5' }
 
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 
 const CreateWallet = (props) => {
   const {
@@ -83,17 +84,6 @@ const CreateWallet = (props) => {
     }
   }
 
-  const [multiplier, setMultiplier] = useState(0)
-
-  const getFiats = async () => {
-    const { fiatsRates } = await actions.user.getFiats()
-
-    if (fiatsRates) {
-      const fiatRate = fiatsRates.find(({ key }) => key === activeFiat)
-      setMultiplier(fiatRate.value)
-    }
-  }
-
   if (currencyBalance) {
     currencyBalance.forEach(async item => {
       if ((!isWidgetBuild || widgetCurrencies.includes(item.name)) && item.infoAboutCurrency && item.balance !== 0) {
@@ -102,20 +92,15 @@ const CreateWallet = (props) => {
         }
 
         btcBalance += item.balance * item.infoAboutCurrency.price_btc
-        fiatBalance += item.balance * item.infoAboutCurrency.price_usd * multiplier
+        fiatBalance += item.balance * ((item.infoAboutCurrency.price_fiat) ? item.infoAboutCurrency.price_fiat : 1)
       }
     })
   }
-
-  useEffect(() => {
-    getFiats()
-  }, [activeFiat])
 
   useEffect(
     () => {
       const singleCurrecny = pathname.split('/')[2]
 
-      getFiats()
       if (singleCurrecny) {
 
         const hiddenList = localStorage.getItem('hiddenCoinsList')
@@ -156,10 +141,8 @@ const CreateWallet = (props) => {
             changePercent = item.infoAboutCurrency.percent_change_1h
           }
 
-          const multiplier = getFiats()
-
           btcBalance += item.balance * item.infoAboutCurrency.price_btc
-          fiatBalance += item.balance * item.infoAboutCurrency.price_usd * multiplier
+          fiatBalance += item.balance * ((item.infoAboutCurrency.price_fiat) ? item.infoAboutCurrency.price_fiat : 1)
         }
       })
     }
@@ -200,10 +183,12 @@ const CreateWallet = (props) => {
       return
     }
 
-    const isIgnoreSecondStep = ['ETH', 'SWAP', 'EURS', 'Custom ERC20'].find(el => Object.keys(currencies).includes(el))
+    const isIgnoreSecondStep = !Object.keys(currencies).includes('BTC') // ['ETH', 'SWAP', 'EURS', 'Custom ERC20'].find(el => Object.keys(currencies).includes(el))
 
-    if (isIgnoreSecondStep) {
-      actions.core.markCoinAsVisible(isIgnoreSecondStep)
+    if (isIgnoreSecondStep && !currencies['Custom ERC20']) {
+      Object.keys(currencies).forEach((currency) => {
+        actions.core.markCoinAsVisible(currency)
+      })
       localStorage.setItem(constants.localStorage.isWalletCreate, true)
       goHome()
       return
@@ -213,12 +198,14 @@ const CreateWallet = (props) => {
       setError('Choose something')
       return
     }
+
+    if (currencies['Custom ERC20']) {
+      goHome()
+      actions.modals.open(constants.modals.AddCustomERC20)
+      return
+    }
+
     if (step === 2 || singleCurrecnyData) {
-      if (currencies['Custom ERC20']) {
-        goHome()
-        actions.modals.open(constants.modals.AddCustomERC20)
-        return
-      }
       switch (secure) {
         case 'withoutSecure':
           Object.keys(currencies).forEach(el => {
@@ -296,9 +283,9 @@ const CreateWallet = (props) => {
           break
         case 'multisignature':
           if (currencies.BTC) {
-            actions.core.markCoinAsVisible('BTC (Multisig)')
             actions.modals.open(constants.modals.MultisignJoinLink, {
               callback: () => {
+                actions.core.markCoinAsVisible('BTC (Multisig)')
                 handleClick()
               },
               showCloseButton: false,
@@ -328,7 +315,7 @@ const CreateWallet = (props) => {
   }
 
   return (
-    <div styleName="wrapper">
+    <div styleName={`wrapper ${isDark ? '--dark' : ''}`}>
       {
         userWallets.length && !localStorage.getItem(constants.wasOnWallet)
           ? <CloseIcon styleName="closeButton" onClick={() => goHome()} data-testid="modalCloseIcon" />

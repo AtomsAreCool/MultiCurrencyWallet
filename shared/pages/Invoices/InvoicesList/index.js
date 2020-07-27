@@ -5,8 +5,7 @@ import actions from 'redux/actions'
 import Slider from 'pages/Wallet/components/WallerSlider';
 import { withRouter } from 'react-router-dom'
 
-import { links } from 'helpers'
-
+import { links, constants } from 'helpers'
 
 import CSSModules from 'react-css-modules'
 import styles from 'pages/CurrencyWallet/CurrencyWallet.scss'
@@ -49,6 +48,8 @@ const langLabels = defineMessages({
   },
 })
 
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+
 @connect(({ signUp: { isSigned } }) => ({
   isSigned,
 }))
@@ -86,10 +87,6 @@ export default class InvoicesList extends PureComponent {
           address = null,
         },
       },
-      intl: {
-        locale,
-      },
-      history,
     } = props
 
     let items = false
@@ -160,10 +157,12 @@ export default class InvoicesList extends PureComponent {
   }
 
   async componentWillUnmount() {
+    console.log('InvoicesList unmounted')
     this.unmounted = true
   }
 
-  async componentWillMount() {
+  async componentDidMount() {
+    console.log('InvoicesList mounted')
     this.fetchItems()
   }
 
@@ -216,8 +215,6 @@ export default class InvoicesList extends PureComponent {
 
   render() {
     let {
-      swapHistory,
-      txHistory,
       location,
       intl,
       isSigned,
@@ -250,7 +247,7 @@ export default class InvoicesList extends PureComponent {
     };
 
     const invoicesTable = (
-      <div styleName="currencyWalletActivity">
+      <div styleName={`currencyWalletActivity ${isDark ? 'darkActivity' : ''}`}>
         <h3>
           {(address) ? (
             <FormattedMessage {...langLabels.navTitleAddress} values={{
@@ -273,19 +270,13 @@ export default class InvoicesList extends PureComponent {
     if (onlyTable) {
       return invoicesTable
     }
-
+    console.log({ isDark })
     return (
-      <div styleName="root">
+      <div styleName={`root ${isDark ? 'dark' : ''}`}>
         <PageSeo
           location={location}
           defaultTitle={intl.formatMessage(metaTitle)}
           defaultDescription={intl.formatMessage(langLabels.metaDescription)} />
-        <Slider
-          settings={settings}
-          multisigStatus={multisigStatus}
-          isSigned={isSigned}
-          {...this.state}
-        />
         {isWidgetBuild && !config.isFullBuild && (
           <ul styleName="widgetNav">
             <li styleName="widgetNavItem" onClick={this.handleGoWalletHome}>
@@ -311,7 +302,7 @@ export default class InvoicesList extends PureComponent {
                   <ContentLoader leftSideContent />
                 )}
             </div>
-            <div styleName="currencyWalletActivityWrapper">
+            <div styleName={`currencyWalletActivity ${isDark ? 'darkActivity' : ''}`}>
               {invoicesTable}
             </div>
           </div>

@@ -14,6 +14,11 @@ export default {
     decimals: 2,
     fullName: 'Rupiah Token',
   },
+    snm: {
+    address: '0x983f6d60db79ea8ca4eb9968c6aff8cfa04b3c63',
+    decimals: 18,
+    fullName: 'snm',
+  },
   usdt: {
     address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     decimals: 6,

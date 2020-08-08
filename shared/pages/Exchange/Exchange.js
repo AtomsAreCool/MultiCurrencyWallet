@@ -81,13 +81,13 @@ const subTitle = (sell, sellTicker, buy, buyTicker) => (
   <div>
     <FormattedMessage
       id="ExchangeTitleTag1"
-      defaultMessage="Fastest cross-chain atomic swaps"
+      defaultMessage="Belifex introduce it's fast cross-chain atomic swap exchange."
     />
     <span styleName="tooltipHeader">
       <Tooltip id="partialAtomicSwapWhatIsIt1" dontHideMobile>
         <FormattedMessage
           id="partialAtomicSwapWhatIsIt"
-          defaultMessage="Atomic swap is a smart contract technology that enables exchange."
+          defaultMessage="Atomic swapping is a smart contract technology that enables the exchange between multiple currencies."
         />
       </Tooltip>
     </span>
@@ -484,11 +484,11 @@ export default class Exchange extends Component {
         message: !isDidntActivateWallet ?
           <FormattedMessage
             id="AlertOrderNonEnoughtBalance"
-            defaultMessage="Please top up your balance before you start the swap."
+            defaultMessage="Please top up your balance before attempting to swap your currency."
           /> :
           <FormattedMessage
             id="walletDidntCreateMessage"
-            defaultMessage="Create {curr} wallet before you start the swap."
+            defaultMessage="Create your {curr} wallet before attempting to swap your currency"
             values={{
               curr: haveCur
             }}
@@ -1275,7 +1275,7 @@ export default class Exchange extends Component {
             >
               <FormattedMessage
                 id="continueDeclined977"
-                defaultMessage="Click here to continue your swaps"
+                defaultMessage="Click here to continue your with your swap request."
               />
             </h5>
           ) : (
@@ -1295,7 +1295,7 @@ export default class Exchange extends Component {
               tooltip={
                 <FormattedMessage
                   id="partial462"
-                  defaultMessage="The amount you have on swap.online or an external wallet that you want to exchange"
+                  defaultMessage="The amount you have on available in your wallet or an the external wallet that you want to exchange"
                 />
               }
               balanceTooltip={(estimatedFeeValues[haveCurrency])
@@ -1328,7 +1328,7 @@ export default class Exchange extends Component {
                   ) ? (
                       <FormattedMessage
                         id="partial766"
-                        defaultMessage="From any wallet or exchange"
+                        defaultMessage="From any wallet or any exchange"
                       />
                     ) : (
                       <>
@@ -1384,7 +1384,7 @@ export default class Exchange extends Component {
               tooltip={
                 <FormattedMessage
                   id="partial478"
-                  defaultMessage="The amount you will receive after the exchange"
+                  defaultMessage="The amount you will receive after the swap"
                 />
               }
               currencies={addSelectedItems}
@@ -1426,14 +1426,14 @@ export default class Exchange extends Component {
           {!oneCryptoCost.isFinite() && !isNonOffers && (
             <FormattedMessage
               id="PartialPriceCalc"
-              defaultMessage="Calc price"
+              defaultMessage="Calculating the perfect price"
             />
           )}
           {isNoAnyOrders && linked.haveAmount.value > 0 && isFullLoadingComplite && <Fragment>
             <p styleName="error">
               <FormattedMessage
                 id="PartialPriceNoOrdersReduce"
-                defaultMessage="No orders found, try later or change the currency pair"
+                defaultMessage="No orders found, try again later or change the currency pair"
               />
             </p>
           </Fragment>}
@@ -1442,7 +1442,7 @@ export default class Exchange extends Component {
               <p styleName="error">
                 <FormattedMessage
                   id="PartialPriceNoOrdersReduceAllInfo"
-                  defaultMessage="This trade amount is too high for present market liquidity. Please reduce amount to {maxForSell}. "
+                  defaultMessage="This trade amount you requested is too high for the current market liquidity. Please reduce amount to {maxForSell}. "
                   values={{
                     maxForBuy: `${maxAmount} ${getCurrency.toUpperCase()}`,
                     maxForSell: `${maxBuyAmount} ${haveCurrency.toUpperCase()}`
@@ -1457,7 +1457,7 @@ export default class Exchange extends Component {
               {/* eslint-disable-line */}
               <FormattedMessage
                 id="PartialOfferCantProceed1"
-                defaultMessage="Request rejected, possibly you have not complete another swap {br}{link}"
+                defaultMessage="Your Request has been rejected, possibly you have not completed another swap request. {br}{link}"
                 values={{
                   link: (
                     <a
@@ -1564,7 +1564,7 @@ export default class Exchange extends Component {
             <span>
               <FormattedMessage
                 id="partial291"
-                defaultMessage="Waiting for another participant (30 sec): "
+                defaultMessage="Waiting for the other participant to join (30 sec): "
               />
               <div styleName="loaderHolder">
                 <div styleName="additionalLoaderHolder">
@@ -1597,7 +1597,7 @@ export default class Exchange extends Component {
               <FormattedMessage id="partial541" defaultMessage="Exchange now" />
             </Button>
             <Button gray styleName="button" onClick={this.createOffer}>
-              <FormattedMessage id="orders128" defaultMessage="Create offer" />
+              <FormattedMessage id="orders128" defaultMessage="Create my offer" />
             </Button>
           </div>
 
@@ -1605,19 +1605,7 @@ export default class Exchange extends Component {
             <NetworkStatus />
           </div>
 
-          {!isWidgetBuild && (
-            <a
-              href="https://generator.swaponline.site/generator/"
-              target="_blank"
-              rel="noopener noreferrer"
-              styleName="widgetLink"
-            >
-              <FormattedMessage
-                id="partial1021"
-                defaultMessage="Embed on website"
-              />
-            </a>
-          )}
+          
         </div>
       </div >
     );

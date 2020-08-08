@@ -20,7 +20,7 @@ const linksManager = {
   swap: '/swaps',
   feed: '/feed',
   aboutUs: '/aboutUs',
-  listing: ''https://dex-belifex.com/'',
+  listing: 'https://dex-belifex.com/',
   test: 'https://testnet.swaponline.io',
   main: 'https://swap.dex-belifex.com/',
   ieo: '/IEO',

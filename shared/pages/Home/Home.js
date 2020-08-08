@@ -49,7 +49,7 @@ export default class Home extends Component {
     const { buy, sell } = this.getCurrentCurrencies(props)
 
     this.state = {
-      buyCurrency: buy || buyCurrency || 'swap',
+      buyCurrency: buy || buyCurrency || 'befx',
       sellCurrency: sell || sellCurrency || 'btc',
       invalidPair: false,
       isShow: false,

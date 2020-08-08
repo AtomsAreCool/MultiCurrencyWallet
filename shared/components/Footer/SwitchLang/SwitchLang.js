@@ -35,7 +35,7 @@ export default class SwitchLang extends Component {
           styleName={`language ${isDark ? '--dark' : ''}`}
           onClick={(e) => { this.switchLang(e, 'EN'); return false }}
         >
-          <FormattedMessage id="SwitchLang20" defaultMessage="EN" />
+          <FormattedMessage id="SwitchLang20" defaultMessage="EN " />
         </a>
         |
         <a
@@ -44,30 +44,6 @@ export default class SwitchLang extends Component {
           onClick={(e) => { this.switchLang(e, 'RU'); return false }}
         >
           <FormattedMessage id="SwitchLang24" defaultMessage=" RU" />
-        </a>
-        |
-        <a
-          href={locale.toUpperCase() === 'NL' ? `#${relocalisedUrl(locale)}` : undefined}
-          styleName="language"
-          onClick={(e) => { this.switchLang(e, 'NL'); return false }}
-        >
-          <FormattedMessage id="SwitchLang24" defaultMessage=" NL" />
-        </a>
-        |
-        <a
-          href={locale.toUpperCase() === 'IT' ? `#${relocalisedUrl(locale)}` : undefined}
-          styleName="language"
-          onClick={(e) => { this.switchLang(e, 'IT'); return false }}
-        >
-          <FormattedMessage id="SwitchLang24" defaultMessage=" IT" />
-        </a>
-        |
-        <a
-          href={locale.toUpperCase() === 'SP' ? `#${relocalisedUrl(locale)}` : undefined}
-          styleName="language"
-          onClick={(e) => { this.switchLang(e, 'SP'); return false }}
-        >
-          <FormattedMessage id="SwitchLang24" defaultMessage=" SP" />
         </a>
       </div>
     )

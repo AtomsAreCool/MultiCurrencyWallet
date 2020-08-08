@@ -19,4 +19,9 @@ export default {
     decimals: 6,
     fullName: 'Tether',
   },
+    pay: {
+    address: '0x1fe72034da777ef22533eaa6dd7cbe1d80be50fa',
+    decimals: 18,
+    fullName: 'PayAccept',
+  },
 }

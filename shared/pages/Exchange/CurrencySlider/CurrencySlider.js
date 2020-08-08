@@ -43,7 +43,7 @@ export default class CurrencySlider extends Component {
       <Fragment>
         <div styleName={`block ${isDark ? 'dark' : ''}`}>
           <h3 styleName="availableCurrencies">
-            <FormattedMessage id="CurrencySlider19" defaultMessage="Already available for exchange" />
+            <FormattedMessage id="CurrencySlider19" defaultMessage="Allready available for exchange" />
           </h3>
           <div styleName="currencyListWrap">
             <ul styleName="currencyList">

@@ -25,7 +25,7 @@ const langLabels = defineMessages({
   },
   optionHotWallet: {
     id: `${langPrefix}_HotWalletAddressOption`,
-    defaultMessage: `My Wallet`,
+    defaultMessage: `My Hot Wallet`,
   },
   optionMetamast: {
     id: `${langPrefix}_MetamaskAddressOption`,
@@ -47,7 +47,7 @@ const langLabels = defineMessages({
 
 const destinationType = {
   none: `none`,
-  hotwallet: `hotwallet`,
+  hotwallet: `my swap hot wallet`,
   metamask: `metamask`,
   custom: `custom`,
 }
